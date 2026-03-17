@@ -2236,19 +2236,25 @@ async function handleWhoopCallback(code) {
 
 async function fetchWhoopData(token) {
   try {
-    const [recovery, sleep, cycles] = await Promise.all([
-      fetch('https://api.prod.whoop.com/developer/v1/recovery', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch('https://api.prod.whoop.com/developer/v1/sleep', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch('https://api.prod.whoop.com/developer/v1/cycle', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
-    ]);
-    const data = mergeWhoopData(recovery.records || [], sleep.records || [], cycles.records || []);
+    const res = await fetch('/.netlify/functions/whoop-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: token })
+    });
+    const result = await res.json();
+    if (!res.ok || result.error) {
+      alert('WHOOP refresh failed: ' + (result.error || 'Unknown error') + '. Your token may have expired — please reconnect WHOOP.');
+      return;
+    }
+    const data = mergeWhoopData(result.recovery || [], result.sleep || [], result.cycles || []);
     STATE.whoop.connected = true;
     STATE.whoop.data = data;
     saveState();
     showWhoopConnected();
+    renderDashboard();
   } catch(e) {
     console.error('Fetch WHOOP data error', e);
-    loadSampleWhoop();
+    alert('Could not refresh WHOOP data. Please check your connection and try again.');
   }
 }
 

@@ -10,59 +10,67 @@ exports.handler = async function(event) {
   }
 
   try {
-    const { code, client_id, client_secret, redirect_uri } = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
+    let accessToken;
 
-    if (!code || !client_id || !client_secret || !redirect_uri) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Missing required parameters' })
-      };
-    }
+    // Support two modes: OAuth code exchange, or direct access_token refresh
+    if (body.access_token) {
+      accessToken = body.access_token;
+    } else {
+      const { code, client_id, client_secret, redirect_uri } = body;
 
-    // Exchange the code for tokens with WHOOP
-    const tokenRes = await fetch('https://api.prod.whoop.com/oauth/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        client_id,
-        client_secret,
-        redirect_uri
-      }).toString()
-    });
+      if (!code || !client_id || !client_secret || !redirect_uri) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Missing required parameters' })
+        };
+      }
 
-    const tokenText = await tokenRes.text();
-    console.log('WHOOP token response status:', tokenRes.status, 'body:', tokenText.substring(0, 300));
+      // Exchange the code for tokens with WHOOP
+      const tokenRes = await fetch('https://api.prod.whoop.com/oauth/oauth2/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          client_id,
+          client_secret,
+          redirect_uri
+        }).toString()
+      });
 
-    let tokens;
-    try { tokens = JSON.parse(tokenText); } catch(e) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Token exchange failed', details: tokenText.substring(0, 200) })
-      };
-    }
+      const tokenText = await tokenRes.text();
+      let tokens;
+      try { tokens = JSON.parse(tokenText); } catch(e) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Token exchange failed', details: tokenText.substring(0, 200) })
+        };
+      }
 
-    if (!tokenRes.ok || !tokens.access_token) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Token exchange failed', details: tokens })
-      };
+      if (!tokenRes.ok || !tokens.access_token) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Token exchange failed', details: tokens })
+        };
+      }
+
+      accessToken = tokens.access_token;
     }
 
     // Fetch WHOOP data using the access token (max limit is 25 per page)
     const [recoveryRes, sleepRes, cycleRes] = await Promise.all([
       fetch('https://api.prod.whoop.com/developer/v1/recovery?limit=25', {
-        headers: { Authorization: `Bearer ${tokens.access_token}` }
+        headers: { Authorization: `Bearer ${accessToken}` }
       }),
       fetch('https://api.prod.whoop.com/developer/v1/activity/sleep?limit=25', {
-        headers: { Authorization: `Bearer ${tokens.access_token}` }
+        headers: { Authorization: `Bearer ${accessToken}` }
       }),
       fetch('https://api.prod.whoop.com/developer/v1/cycle?limit=25', {
-        headers: { Authorization: `Bearer ${tokens.access_token}` }
+        headers: { Authorization: `Bearer ${accessToken}` }
       })
     ]);
 
@@ -84,11 +92,10 @@ exports.handler = async function(event) {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        access_token: tokens.access_token,
+        access_token: accessToken,
         recovery: recovery.records || [],
         sleep: sleep.records || [],
-        cycles: cycles.records || [],
-        _debug: { recoveryCount: (recovery.records||[]).length, sleepCount: (sleep.records||[]).length, cyclesCount: (cycles.records||[]).length, recoveryKeys: Object.keys(recovery), sleepKeys: Object.keys(sleep) }
+        cycles: cycles.records || []
       })
     };
 
