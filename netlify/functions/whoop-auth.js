@@ -33,7 +33,17 @@ exports.handler = async function(event) {
       }).toString()
     });
 
-    const tokens = await tokenRes.json();
+    const tokenText = await tokenRes.text();
+    console.log('WHOOP token response status:', tokenRes.status, 'body:', tokenText.substring(0, 300));
+
+    let tokens;
+    try { tokens = JSON.parse(tokenText); } catch(e) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Token exchange failed', details: tokenText.substring(0, 200) })
+      };
+    }
 
     if (!tokenRes.ok || !tokens.access_token) {
       return {
