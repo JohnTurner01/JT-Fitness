@@ -61,6 +61,13 @@ exports.handler = async function(event) {
       accessToken = tokens.access_token;
     }
 
+    // Verify token with user profile
+    const profileRes = await fetch('https://api.prod.whoop.com/developer/v1/user/profile/basic', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const profileText = await profileRes.text();
+    console.log('WHOOP profile', profileRes.status, profileText.substring(0, 200));
+
     // Fetch WHOOP data using the access token (max limit is 25 per page)
     const [recoveryRes, sleepRes, cycleRes] = await Promise.all([
       fetch('https://api.prod.whoop.com/developer/v1/recovery?limit=25', {
@@ -76,8 +83,8 @@ exports.handler = async function(event) {
 
     const safeJson = async (res) => {
       const text = await res.text();
-      console.log('WHOOP data response', res.url, res.status, text.substring(0, 100));
-      try { return JSON.parse(text); } catch(e) { return {}; }
+      console.log('WHOOP data response', res.url, res.status, text.substring(0, 500));
+      try { return JSON.parse(text); } catch(e) { return { _raw: text, _status: res.status }; }
     };
 
     const [recovery, sleep, cycles] = await Promise.all([
