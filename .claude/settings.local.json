@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \":*)",
+      "Bash(gh repo:*)",
+      "Bash(git --version)",
+      "Read(//usr/local/bin/**)",
+      "Bash(brew list:*)",
+      "Read(//Users/johnturner/**)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(brew --version)"
+    ]
+  }
+}

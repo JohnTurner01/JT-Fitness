@@ -74,6 +74,7 @@ exports.handler = async function(event) {
     };
 
   } catch (err) {
+    console.error('whoop-auth error:', err.message, err.stack);
     return {
       statusCode: 500,
       headers,

@@ -2208,7 +2208,7 @@ async function handleWhoopCallback(code) {
     const result = await res.json();
 
     if (!res.ok || result.error) {
-      showWhoopError('Connection failed: ' + (result.error || 'Unknown error') + '. Please check your Client ID and Secret and try again.');
+      showWhoopError('Connection failed: ' + (result.error || 'Unknown error') + (result.message ? ' — ' + result.message : '') + '. Please check your Client ID and Secret and try again.');
       window.history.replaceState({}, '', window.location.pathname);
       return;
     }
