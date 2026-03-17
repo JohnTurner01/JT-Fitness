@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Privacy Policy — Apex Health Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --border: #2a2a3a;
+    --accent: #00ff88;
+    --text: #e8e8f0;
+    --muted: #6b6b85;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 60px 24px;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .logo {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin-bottom: 48px;
+  }
+  h1 {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+  .date {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 40px;
+  }
+  h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 32px 0 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  p, li {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.9;
+  }
+  ul { padding-left: 20px; margin-top: 8px; }
+  li { margin-bottom: 6px; }
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 40px 0;
+  }
+  .footer {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 60px;
+    opacity: 0.5;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="logo">◈ APEX HEALTH PLATFORM</div>
+
+  <h1>Privacy Policy</h1>
+  <p class="date">Last updated: March 2026</p>
+
+  <p>This privacy policy describes how the Apex Health Platform ("the App") handles your personal data. This is a personal-use application. Please read this policy carefully.</p>
+
+  <h2>1. Who We Are</h2>
+  <p>Apex Health Platform is a personal health and performance dashboard built for individual use. It is not a commercial product and is not operated by a company. It is used solely by its owner for personal health tracking.</p>
+
+  <h2>2. What Data Is Collected</h2>
+  <p>The App may access and process the following types of data, solely at the direction of the user:</p>
+  <ul>
+    <li>WHOOP recovery scores, HRV, sleep data, and strain data (via WHOOP API)</li>
+    <li>Strava activity data including workouts, pace, distance, and heart rate (via Strava API)</li>
+    <li>Nutrition and exercise data uploaded manually via spreadsheet</li>
+    <li>Manually entered biometric data such as weight, resting heart rate, and mood</li>
+  </ul>
+
+  <h2>3. How Data Is Stored</h2>
+  <p>All data is stored locally in the user's own browser (localStorage) on their personal device. No data is transmitted to any third-party server except:</p>
+  <ul>
+    <li>If the user chooses to enable optional cloud sync via their own personal Supabase account — in which case data is stored in a database the user controls</li>
+    <li>If the user enables AI-powered recommendations — in which case a summary of their health data is sent to the Anthropic API using the user's own API key</li>
+  </ul>
+  <p>In all cases, data transmission is initiated explicitly by the user.</p>
+
+  <h2>4. Data Sharing</h2>
+  <p>We do not sell, rent, share, or transmit your personal data to any third parties. Your health data is never used for advertising, analytics, or any commercial purpose. The App has no backend server of its own.</p>
+
+  <h2>5. Third-Party Services</h2>
+  <p>The App integrates with the following third-party services at the user's request:</p>
+  <ul>
+    <li><strong>WHOOP API</strong> — subject to WHOOP's own privacy policy at whoop.com/privacy</li>
+    <li><strong>Strava API</strong> — subject to Strava's own privacy policy at strava.com/legal/privacy</li>
+    <li><strong>Anthropic API</strong> — subject to Anthropic's privacy policy at anthropic.com/privacy</li>
+    <li><strong>Supabase</strong> (optional) — subject to Supabase's privacy policy at supabase.com/privacy</li>
+  </ul>
+
+  <h2>6. Data Retention</h2>
+  <p>Data is retained in the user's browser until they choose to clear it. The user can delete all data at any time using the "Wipe All Data" button in the App's Settings page.</p>
+
+  <h2>7. Your Rights</h2>
+  <p>As the sole user of this application, you have full control over your data. You can:</p>
+  <ul>
+    <li>Export all your data at any time via Settings → Export All Data</li>
+    <li>Delete all your data at any time via Settings → Wipe All Data</li>
+    <li>Revoke WHOOP or Strava access at any time via those platforms' own settings</li>
+  </ul>
+
+  <h2>8. Cookies</h2>
+  <p>The App does not use cookies. It uses browser localStorage solely for saving your settings and data on your own device.</p>
+
+  <h2>9. Changes to This Policy</h2>
+  <p>This policy may be updated from time to time. The date at the top of this page reflects the most recent revision.</p>
+
+  <h2>10. Contact</h2>
+  <p>As this is a personal-use application, there is no formal contact process. If you are viewing this page as part of a WHOOP or Strava API review, this app is used exclusively by its developer for personal health tracking and is not distributed to the public.</p>
+
+  <div class="divider"></div>
+
+  <p class="footer">Apex Health Platform · Personal Use Only · Not a commercial product</p>
+
+</div>
+</body>
+</html>

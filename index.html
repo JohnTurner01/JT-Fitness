@@ -1,0 +1,3460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Apex Health Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #111118;
+  --surface2: #1a1a24;
+  --border: #2a2a3a;
+  --accent: #00ff88;
+  --accent2: #ff6b35;
+  --accent3: #7c3aed;
+  --text: #e8e8f0;
+  --muted: #6b6b85;
+  --danger: #ff4444;
+  --warning: #ffaa00;
+  --whoop: #00ff88;
+  --strava: #fc4c02;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+  --r: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── NAV ─── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,15,0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 64px;
+}
+
+.nav-logo {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-logo span { color: var(--accent); }
+
+.nav-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-tab {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.nav-tab:hover { color: var(--text); background: var(--surface2); }
+.nav-tab.active { color: var(--accent); background: rgba(0,255,136,0.1); }
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  display: inline-block;
+}
+.status-dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+/* ─── MAIN ─── */
+main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 32px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* ─── SETUP PAGE ─── */
+.setup-hero {
+  text-align: center;
+  padding: 60px 0 48px;
+}
+
+.setup-hero h1 {
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.setup-hero h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.setup-hero p {
+  color: var(--muted);
+  font-size: 16px;
+  font-family: var(--font-mono);
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+  margin-top: 48px;
+}
+
+.connector-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.connector-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.connector-card.connected { border-color: var(--accent); background: rgba(0,255,136,0.04); }
+
+.connector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.connector-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.connector-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.connector-icon.whoop { background: rgba(0,255,136,0.15); color: var(--whoop); }
+.connector-icon.strava { background: rgba(252,76,2,0.15); color: var(--strava); }
+.connector-icon.excel { background: rgba(124,58,237,0.15); color: var(--accent3); }
+.connector-icon.manual { background: rgba(255,170,0,0.15); color: var(--warning); }
+
+.connector-name { font-size: 18px; font-weight: 700; }
+.connector-type { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.badge.oauth { background: rgba(0,255,136,0.1); color: var(--accent); }
+.badge.upload { background: rgba(124,58,237,0.1); color: var(--accent3); }
+.badge.manual { background: rgba(255,170,0,0.1); color: var(--warning); }
+.badge.connected { background: rgba(0,255,136,0.2); color: var(--accent); }
+
+.connector-desc {
+  font-size: 13px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+/* ─── FORM ELEMENTS ─── */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.field-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.field-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 10px 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.field-input:focus { border-color: var(--accent); }
+.field-input::placeholder { color: var(--muted); }
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--r);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.btn-full { width: 100%; }
+
+.btn-accent {
+  background: var(--accent);
+  color: #000;
+}
+.btn-accent:hover { background: #00e67a; box-shadow: 0 0 20px rgba(0,255,136,0.3); }
+
+.btn-strava {
+  background: var(--strava);
+  color: #fff;
+}
+.btn-strava:hover { background: #e04400; box-shadow: 0 0 20px rgba(252,76,2,0.3); }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+.btn-danger { background: rgba(255,68,68,0.15); border: 1px solid var(--danger); color: var(--danger); }
+
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── UPLOAD ZONE ─── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--r);
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent3);
+  background: rgba(124,58,237,0.05);
+}
+
+.upload-zone input { display: none; }
+.upload-zone-icon { font-size: 32px; margin-bottom: 8px; }
+.upload-zone-text { font-size: 13px; color: var(--muted); font-family: var(--font-mono); }
+.upload-zone-sub { font-size: 11px; color: var(--muted); opacity: 0.6; margin-top: 4px; }
+
+/* ─── DASHBOARD ─── */
+.dashboard-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard-title h2 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+}
+
+.dashboard-title p {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.date-range {
+  display: flex;
+  gap: 8px;
+}
+
+.date-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.date-btn:hover, .date-btn.active { border-color: var(--accent); color: var(--accent); }
+
+/* ─── KPI GRID ─── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--kpi-color, var(--accent));
+}
+
+.kpi-card:hover { border-color: var(--kpi-color, var(--accent)); }
+
+.kpi-label {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+  color: var(--kpi-color, var(--text));
+}
+
+.kpi-unit {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  margin-top: 4px;
+}
+
+.kpi-delta {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  margin-top: 6px;
+}
+.kpi-delta.up { color: var(--accent); }
+.kpi-delta.down { color: var(--danger); }
+.kpi-delta.neutral { color: var(--muted); }
+
+/* ─── CHART GRID ─── */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.chart-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.chart-card.full { grid-column: 1 / -1; }
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.chart-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.chart-sub {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 200px;
+}
+
+.chart-wrap.tall { height: 260px; }
+
+/* ─── CORRELATION TABLE ─── */
+.corr-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.corr-cell {
+  padding: 8px 6px;
+  text-align: center;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.corr-cell.header { color: var(--muted); background: none; font-weight: 400; }
+.corr-cell.label { text-align: left; color: var(--muted); padding-left: 0; }
+
+/* ─── AI RECOMMENDATIONS ─── */
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.rec-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.rec-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(0,255,136,0.04), transparent 60%);
+  pointer-events: none;
+}
+
+.rec-type {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rec-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+}
+
+.rec-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -0.3px;
+}
+
+.rec-body {
+  font-size: 13px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  line-height: 1.7;
+}
+
+.rec-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-top: 14px;
+}
+
+.rec-priority.high { background: rgba(255,68,68,0.1); color: var(--danger); }
+.rec-priority.medium { background: rgba(255,170,0,0.1); color: var(--warning); }
+.rec-priority.low { background: rgba(0,255,136,0.1); color: var(--accent); }
+
+/* ─── AI CHAT ─── */
+.ai-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.ai-panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0,255,136,0.03);
+}
+
+.ai-icon {
+  width: 32px; height: 32px;
+  background: rgba(0,255,136,0.15);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.ai-panel-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ai-panel-header p {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.ai-messages {
+  height: 280px;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ai-messages::-webkit-scrollbar { width: 4px; }
+.ai-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.msg {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.msg.user { flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.msg-avatar.ai { background: rgba(0,255,136,0.15); color: var(--accent); }
+.msg-avatar.user-av { background: rgba(124,58,237,0.15); color: var(--accent3); }
+
+.msg-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  line-height: 1.6;
+}
+
+.msg.ai .msg-bubble {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-top-left-radius: 2px;
+}
+
+.msg.user .msg-bubble {
+  background: rgba(124,58,237,0.15);
+  border: 1px solid rgba(124,58,237,0.2);
+  color: var(--text);
+  border-top-right-radius: 2px;
+}
+
+.ai-input-row {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+}
+
+.ai-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.ai-input:focus { border-color: var(--accent); }
+.ai-input::placeholder { color: var(--muted); }
+
+/* ─── MANUAL ENTRY ─── */
+.entry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.entry-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.entry-section h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.entry-section .section-sub {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  margin-bottom: 20px;
+}
+
+.inline-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ─── DATA TABLE ─── */
+.data-table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.data-table th {
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(42,42,58,0.5);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.tag.run { background: rgba(252,76,2,0.15); color: var(--strava); }
+.tag.ride { background: rgba(0,120,255,0.15); color: #4499ff; }
+.tag.strength { background: rgba(124,58,237,0.15); color: var(--accent3); }
+.tag.swim { background: rgba(0,200,200,0.15); color: #00cccc; }
+
+/* ─── LOADING ─── */
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+/* ─── ALERTS ─── */
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--r);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alert.info { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.2); color: var(--accent); }
+.alert.warning { background: rgba(255,170,0,0.08); border: 1px solid rgba(255,170,0,0.2); color: var(--warning); }
+.alert.error { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.2); color: var(--danger); }
+
+/* ─── SETTINGS ─── */
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-section h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+
+.settings-section .section-desc {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  text-align: center;
+  padding: 80px 32px;
+  color: var(--muted);
+}
+
+.empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+.empty-state h3 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.empty-state p { font-family: var(--font-mono); font-size: 13px; line-height: 1.7; max-width: 400px; margin: 0 auto 24px; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .chart-grid { grid-template-columns: 1fr; }
+  .chart-grid-3 { grid-template-columns: 1fr; }
+  .nav-tabs { display: none; }
+  main { padding: 20px 16px 60px; }
+}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page.active > * {
+  animation: fadeUp 0.3s ease both;
+}
+
+.page.active > *:nth-child(2) { animation-delay: 0.05s; }
+.page.active > *:nth-child(3) { animation-delay: 0.1s; }
+.page.active > *:nth-child(4) { animation-delay: 0.15s; }
+
+/* ─── TYPING INDICATOR ─── */
+.typing {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-top-left-radius: 2px;
+  width: fit-content;
+}
+
+.typing span {
+  width: 6px; height: 6px;
+  background: var(--muted);
+  border-radius: 50%;
+  animation: typingDot 1.2s infinite;
+}
+
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingDot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Nutrition macros bar */
+.macro-bar-wrap { margin-bottom: 12px; }
+.macro-label-row { display: flex; justify-content: space-between; font-size: 11px; font-family: var(--font-mono); color: var(--muted); margin-bottom: 4px; }
+.macro-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.macro-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+
+.section-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 32px 0;
+}
+
+.pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+/* ─── SIDEBAR LAYOUT ─── */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  background: rgba(8,8,13,0.98);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 200;
+}
+
+.sidebar-logo {
+  padding: 22px 20px 18px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-logo span { color: var(--accent); }
+.sidebar-logo .logo-symbol { color: var(--accent); font-size: 18px; }
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 14px 10px;
+  flex: 1;
+}
+
+.sidebar-section-label {
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--border);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 12px 10px 4px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  width: 100%;
+  letter-spacing: 0.2px;
+}
+
+.sidebar-item:hover { color: var(--text); background: var(--surface2); }
+.sidebar-item.active { color: var(--accent); background: rgba(0,255,136,0.09); }
+.sidebar-item.active .sidebar-icon { color: var(--accent); }
+
+.sidebar-icon {
+  width: 22px;
+  text-align: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.sidebar-item:hover .sidebar-icon { opacity: 1; }
+.sidebar-item.active .sidebar-icon { opacity: 1; }
+
+.sidebar-footer {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-status {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sidebar-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+.main-content {
+  flex: 1;
+  overflow-x: hidden;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,15,0.93);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 58px;
+  flex-shrink: 0;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
+
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+}
+.hamburger:hover { background: var(--surface2); }
+
+/* ─── TODAY HERO ─── */
+.today-hero {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.today-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 10% -20%, rgba(0,255,136,0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.hero-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 8px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04);
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+
+.hero-metric:hover {
+  border-color: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+}
+
+.hero-label {
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.hero-value {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.hero-unit {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  margin-bottom: 8px;
+}
+
+.hero-trend {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.hero-trend.up { background: rgba(0,255,136,0.12); color: var(--accent); }
+.hero-trend.down { background: rgba(255,68,68,0.12); color: var(--danger); }
+.hero-trend.neutral { background: rgba(107,107,133,0.12); color: var(--muted); }
+
+/* ─── ENHANCED KPI CARDS ─── */
+.kpi-card {
+  backdrop-filter: blur(8px);
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+/* ─── ENHANCED CHART CARDS ─── */
+.chart-card {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.chart-card:hover {
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+/* ─── ENHANCED CONNECTOR CARDS ─── */
+.connector-card {
+  backdrop-filter: blur(10px);
+}
+
+/* ─── HIDE OLD NAV ON DESKTOP ─── */
+.nav { display: none; }
+
+/* ─── SIDEBAR OVERLAY (MOBILE) ─── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 250;
+  backdrop-filter: blur(2px);
+}
+.sidebar-overlay.visible { display: block; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .app-layout { display: block; }
+  .sidebar {
+    position: fixed;
+    left: -240px;
+    top: 0;
+    height: 100%;
+    transition: left 0.28s cubic-bezier(0.4,0,0.2,1);
+    z-index: 300;
+  }
+  .sidebar.open { left: 0; }
+  .hamburger { display: block; }
+  .today-hero { grid-template-columns: repeat(3, 1fr); }
+  .chart-grid { grid-template-columns: 1fr; }
+  .chart-grid-3 { grid-template-columns: 1fr; }
+  main { padding: 20px 16px 60px; }
+}
+
+@media (min-width: 901px) {
+  .topbar { padding: 0 32px; }
+}
+
+/* ─── ENHANCED SCROLLBAR ─── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ─── PAGE TRANSITION ─── */
+.page.active { animation: pageFadeIn 0.2s ease both; }
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div class="app-layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-symbol">◈</span> <span>APEX</span> HEALTH
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section-label">Connect</div>
+    <button class="sidebar-item active" onclick="showPage('setup')" data-page="setup">
+      <span class="sidebar-icon">⊕</span> Setup
+    </button>
+    <div class="sidebar-section-label">Analyse</div>
+    <button class="sidebar-item" onclick="showPage('dashboard')" data-page="dashboard">
+      <span class="sidebar-icon">▦</span> Dashboard
+    </button>
+    <button class="sidebar-item" onclick="showPage('recommendations')" data-page="recommendations">
+      <span class="sidebar-icon">✦</span> AI Insights
+    </button>
+    <button class="sidebar-item" onclick="showPage('data')" data-page="data">
+      <span class="sidebar-icon">≡</span> Raw Data
+    </button>
+    <div class="sidebar-section-label">Log</div>
+    <button class="sidebar-item" onclick="showPage('entry')" data-page="entry">
+      <span class="sidebar-icon">✎</span> Log Data
+    </button>
+    <div class="sidebar-section-label">Config</div>
+    <button class="sidebar-item" onclick="showPage('settings')" data-page="settings">
+      <span class="sidebar-icon">⚙</span> Settings
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-status">
+      <div class="sidebar-status-row">
+        <span class="status-dot" id="dot-whoop"></span> WHOOP
+      </div>
+      <div class="sidebar-status-row">
+        <span class="status-dot" id="dot-strava"></span> STRAVA
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="main-content">
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+    <span class="topbar-title" id="topbar-title">Setup</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <button class="btn btn-accent" id="topbar-cta" style="display:none;padding:7px 16px;font-size:12px" onclick="showPage('dashboard')">Dashboard →</button>
+  </div>
+</header>
+
+<main>
+<!-- ═══════════════ SETUP PAGE ═══════════════ -->
+<div class="page active" id="page-setup">
+  <div class="setup-hero">
+    <h1>Connect your <em>data.</em><br>Unlock your performance.</h1>
+    <p>Link Whoop, Strava, and your spreadsheets. AI-powered insights across training, recovery, nutrition, and sleep.</p>
+  </div>
+
+  <div class="setup-grid">
+    <!-- WHOOP -->
+    <div class="connector-card" id="card-whoop">
+      <div class="connector-header">
+        <div class="connector-brand">
+          <div class="connector-icon whoop">W</div>
+          <div>
+            <div class="connector-name">WHOOP</div>
+            <div class="connector-type">Recovery · Sleep · HRV · Strain</div>
+          </div>
+        </div>
+        <span class="badge oauth" id="badge-whoop">OAuth2</span>
+      </div>
+      <p class="connector-desc">Connect your WHOOP band to import recovery scores, HRV, sleep stages, respiratory rate, and daily strain.</p>
+      <div id="whoop-form">
+        <div class="alert info">⚡ You'll need a WHOOP Developer app. Create one at <strong>developer.whoop.com</strong> to get your Client ID & Secret.</div>
+        <div class="field-group">
+          <label class="field-label">Client ID</label>
+          <input class="field-input" id="whoop-client-id" placeholder="whoop_xxxxxxxx" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Client Secret</label>
+          <input class="field-input" type="password" id="whoop-client-secret" placeholder="••••••••••••••••" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Redirect URI (set this in your WHOOP app)</label>
+          <input class="field-input" id="whoop-redirect" readonly style="color:var(--muted)" />
+        </div>
+        <button class="btn btn-accent btn-full" onclick="connectWhoop()">Connect WHOOP →</button>
+        <div style="margin-top:10px">
+          <button class="btn btn-ghost btn-full" onclick="loadSampleWhoop()">↗ Load Sample Data (Demo)</button>
+        </div>
+      </div>
+      <div id="whoop-connected" style="display:none">
+        <div class="alert info">✓ WHOOP connected · <span id="whoop-data-count">0</span> days of data loaded</div>
+        <button class="btn btn-danger btn-full" onclick="disconnectWhoop()">Disconnect</button>
+      </div>
+    </div>
+
+    <!-- STRAVA -->
+    <div class="connector-card" id="card-strava">
+      <div class="connector-header">
+        <div class="connector-brand">
+          <div class="connector-icon strava">S</div>
+          <div>
+            <div class="connector-name">STRAVA</div>
+            <div class="connector-type">Activities · Pace · Power · Load</div>
+          </div>
+        </div>
+        <span class="badge oauth" id="badge-strava" style="background:rgba(252,76,2,0.1);color:var(--strava)">OAuth2</span>
+      </div>
+      <p class="connector-desc">Pull your runs, rides, swims, and strength sessions with full activity stats including pace, power, and TSS.</p>
+      <div id="strava-form">
+        <div class="alert info">⚡ Create a Strava API app at <strong>strava.com/settings/api</strong> to get your Client ID & Secret.</div>
+        <div class="field-group">
+          <label class="field-label">Client ID</label>
+          <input class="field-input" id="strava-client-id" placeholder="12345" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Client Secret</label>
+          <input class="field-input" type="password" id="strava-client-secret" placeholder="••••••••••••••••" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">Redirect URI (set this in your Strava app)</label>
+          <input class="field-input" id="strava-redirect" readonly style="color:var(--muted)" />
+        </div>
+        <button class="btn btn-strava btn-full" onclick="connectStrava()">Connect Strava →</button>
+        <div style="margin-top:10px">
+          <button class="btn btn-ghost btn-full" onclick="loadSampleStrava()">↗ Load Sample Data (Demo)</button>
+        </div>
+      </div>
+      <div id="strava-connected" style="display:none">
+        <div class="alert info" style="background:rgba(252,76,2,0.08);border-color:rgba(252,76,2,0.2);color:var(--strava)">✓ Strava connected · <span id="strava-data-count">0</span> activities loaded</div>
+        <button class="btn btn-danger btn-full" onclick="disconnectStrava()">Disconnect</button>
+      </div>
+    </div>
+
+    <!-- EXCEL UPLOAD -->
+    <div class="connector-card" id="card-excel">
+      <div class="connector-header">
+        <div class="connector-brand">
+          <div class="connector-icon excel">X</div>
+          <div>
+            <div class="connector-name">Excel / CSV</div>
+            <div class="connector-type">Nutrition · Custom Workouts · Any Data</div>
+          </div>
+        </div>
+        <span class="badge upload">Upload</span>
+      </div>
+      <p class="connector-desc">Upload spreadsheets from Cronometer exports, custom workout logs, nutrition diaries, or any tabular health data.</p>
+      <div class="upload-zone" id="excel-drop-zone" onclick="document.getElementById('excel-file').click()">
+        <input type="file" id="excel-file" accept=".xlsx,.xls,.csv" onchange="handleExcelUpload(event)"/>
+        <div class="upload-zone-icon">📊</div>
+        <div class="upload-zone-text">Drop your .xlsx, .xls, or .csv file here</div>
+        <div class="upload-zone-sub">Cronometer exports · Custom logs · Nutrition diaries</div>
+      </div>
+      <div id="excel-status"></div>
+      <div style="margin-top:12px">
+        <p style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-bottom:8px">Expected columns (flexible):</p>
+        <div class="pill-group">
+          <span class="pill">Date</span>
+          <span class="pill">Calories</span>
+          <span class="pill">Protein (g)</span>
+          <span class="pill">Carbs (g)</span>
+          <span class="pill">Fat (g)</span>
+          <span class="pill">Activity</span>
+          <span class="pill">Duration</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANUAL ENTRY TEASER -->
+    <div class="connector-card" id="card-manual">
+      <div class="connector-header">
+        <div class="connector-brand">
+          <div class="connector-icon manual">✎</div>
+          <div>
+            <div class="connector-name">Manual Log</div>
+            <div class="connector-type">Ad-hoc entries · Any activity</div>
+          </div>
+        </div>
+        <span class="badge manual">Manual</span>
+      </div>
+      <p class="connector-desc">Manually log workouts, nutrition, weight, mood, and other metrics that don't come from connected apps.</p>
+      <button class="btn btn-outline btn-full" onclick="showPage('entry')">Open Log Entry →</button>
+      <div id="manual-status" style="margin-top:12px">
+        <div style="font-size:12px;color:var(--muted);font-family:var(--font-mono)">0 manual entries</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:40px">
+    <button class="btn btn-accent" style="padding:14px 40px;font-size:15px" onclick="goToDashboard()">
+      View Dashboard →
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════ DASHBOARD PAGE ═══════════════ -->
+<div class="page" id="page-dashboard">
+  <div class="dashboard-header">
+    <div class="dashboard-title">
+      <h2>Performance Overview</h2>
+      <p id="dash-subtitle">Loading data…</p>
+    </div>
+    <div class="date-range">
+      <button class="date-btn active" onclick="setRange(7, this)">7D</button>
+      <button class="date-btn" onclick="setRange(14, this)">14D</button>
+      <button class="date-btn" onclick="setRange(30, this)">30D</button>
+      <button class="date-btn" onclick="setRange(90, this)">90D</button>
+    </div>
+  </div>
+
+  <div id="dash-empty" style="display:none">
+    <div class="empty-state">
+      <div class="empty-state-icon">📡</div>
+      <h3>No data connected yet</h3>
+      <p>Connect WHOOP, Strava, or upload a spreadsheet to see your performance dashboard.</p>
+      <button class="btn btn-accent" onclick="showPage('setup')">Go to Setup →</button>
+    </div>
+  </div>
+
+  <div id="dash-content">
+    <!-- Today Hero -->
+    <div class="today-hero" id="today-hero" style="display:none"></div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid" id="kpi-grid"></div>
+
+    <!-- Main Charts -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Recovery & Strain Trend</div>
+            <div class="chart-sub">WHOOP recovery score vs daily strain</div>
+          </div>
+        </div>
+        <div class="chart-wrap tall">
+          <canvas id="chart-recovery"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Sleep Quality</div>
+            <div class="chart-sub">Hours & sleep score</div>
+          </div>
+        </div>
+        <div class="chart-wrap tall">
+          <canvas id="chart-sleep"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-grid-3">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Weekly Volume</div>
+            <div class="chart-sub">Training hours per week</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-volume"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">HRV Trend</div>
+            <div class="chart-sub">Heart rate variability (ms)</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-hrv"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Nutrition Averages</div>
+            <div class="chart-sub">7-day macro breakdown</div>
+          </div>
+        </div>
+        <div id="macro-display">
+          <div style="display:flex;justify-content:center;align-items:center;height:180px;color:var(--muted);font-family:var(--font-mono);font-size:13px">No nutrition data</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Correlations -->
+    <div class="chart-card" style="margin-bottom:20px">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Correlation Matrix</div>
+          <div class="chart-sub">Statistical relationships between your key metrics</div>
+        </div>
+      </div>
+      <div id="corr-matrix"></div>
+    </div>
+
+    <!-- Activity breakdown -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Activity Breakdown</div>
+            <div class="chart-sub">Last 30 days by type</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-activities"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Recovery Distribution</div>
+            <div class="chart-sub">How often you're green / yellow / red</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-recovery-dist"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ AI INSIGHTS PAGE ═══════════════ -->
+<div class="page" id="page-recommendations">
+  <div class="dashboard-header">
+    <div class="dashboard-title">
+      <h2>AI Insights</h2>
+      <p>Claude-powered analysis across all your data sources</p>
+    </div>
+    <button class="btn btn-accent" onclick="generateInsights()" id="gen-insights-btn">
+      ⚡ Regenerate Insights
+    </button>
+  </div>
+
+  <div id="insights-loading" style="display:none">
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      Analysing your data across recovery, training, sleep, and nutrition…
+    </div>
+  </div>
+
+  <div id="insights-empty" style="display:none">
+    <div class="empty-state">
+      <div class="empty-state-icon">🧠</div>
+      <h3>No data to analyse yet</h3>
+      <p>Connect at least one data source and come back here to get personalised recommendations.</p>
+      <button class="btn btn-accent" onclick="showPage('setup')">Connect Data →</button>
+    </div>
+  </div>
+
+  <div id="rec-cards" class="rec-grid"></div>
+
+  <div class="section-divider"></div>
+
+  <!-- AI CHAT -->
+  <div class="ai-panel">
+    <div class="ai-panel-header">
+      <div class="ai-icon">◈</div>
+      <div>
+        <h3>Ask about your data</h3>
+        <p>Chat with Claude about your training, recovery, nutrition, and performance patterns</p>
+      </div>
+    </div>
+    <div class="ai-messages" id="ai-messages">
+      <div class="msg ai">
+        <div class="msg-avatar ai">◈</div>
+        <div class="msg-bubble">Hey! I'm your AI performance coach. Connect your data and I'll give you personalised insights across training load, recovery, sleep quality, and nutrition. What would you like to know?</div>
+      </div>
+    </div>
+    <div class="ai-input-row">
+      <input class="ai-input" id="ai-input" placeholder="Ask about your training, recovery, nutrition…" onkeydown="if(event.key==='Enter')sendChat()"/>
+      <button class="btn btn-accent" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+
+  <!-- Settings for API key -->
+  <div class="alert warning" id="api-key-alert" style="display:none">
+    ⚠ No Anthropic API key set. Go to <strong>Settings</strong> to add your key for AI-powered insights.
+  </div>
+</div>
+
+<!-- ═══════════════ LOG ENTRY PAGE ═══════════════ -->
+<div class="page" id="page-entry">
+  <div class="dashboard-header">
+    <div class="dashboard-title">
+      <h2>Log Entry</h2>
+      <p>Manually record workouts, nutrition, and other metrics</p>
+    </div>
+  </div>
+
+  <div class="entry-grid">
+    <!-- Workout Entry -->
+    <div class="entry-section">
+      <h3>🏃 Workout</h3>
+      <p class="section-sub">Log a training session manually</p>
+      <div class="field-group">
+        <label class="field-label">Date</label>
+        <input type="date" class="field-input" id="entry-date"/>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Activity Type</label>
+        <select class="field-input" id="entry-type">
+          <option value="Run">Run</option>
+          <option value="Ride">Ride</option>
+          <option value="Swim">Swim</option>
+          <option value="Strength">Strength</option>
+          <option value="HIIT">HIIT</option>
+          <option value="Walk">Walk</option>
+          <option value="Yoga">Yoga</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="inline-fields">
+        <div class="field-group">
+          <label class="field-label">Duration (min)</label>
+          <input type="number" class="field-input" id="entry-duration" placeholder="45"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Distance (km)</label>
+          <input type="number" class="field-input" id="entry-distance" placeholder="10"/>
+        </div>
+      </div>
+      <div class="inline-fields">
+        <div class="field-group">
+          <label class="field-label">Avg HR (bpm)</label>
+          <input type="number" class="field-input" id="entry-hr" placeholder="148"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Perceived Effort (1-10)</label>
+          <input type="number" class="field-input" id="entry-rpe" min="1" max="10" placeholder="7"/>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Notes</label>
+        <input class="field-input" id="entry-notes" placeholder="Felt strong, warm weather…"/>
+      </div>
+      <button class="btn btn-accent btn-full" onclick="saveWorkoutEntry()">Save Workout</button>
+    </div>
+
+    <!-- Nutrition Entry -->
+    <div class="entry-section">
+      <h3>🥗 Nutrition</h3>
+      <p class="section-sub">Log daily nutrition intake</p>
+      <div class="field-group">
+        <label class="field-label">Date</label>
+        <input type="date" class="field-input" id="nutr-date"/>
+      </div>
+      <div class="inline-fields">
+        <div class="field-group">
+          <label class="field-label">Calories (kcal)</label>
+          <input type="number" class="field-input" id="nutr-calories" placeholder="2400"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Protein (g)</label>
+          <input type="number" class="field-input" id="nutr-protein" placeholder="180"/>
+        </div>
+      </div>
+      <div class="inline-fields">
+        <div class="field-group">
+          <label class="field-label">Carbs (g)</label>
+          <input type="number" class="field-input" id="nutr-carbs" placeholder="240"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Fat (g)</label>
+          <input type="number" class="field-input" id="nutr-fat" placeholder="80"/>
+        </div>
+      </div>
+      <div class="inline-fields">
+        <div class="field-group">
+          <label class="field-label">Water (L)</label>
+          <input type="number" step="0.1" class="field-input" id="nutr-water" placeholder="2.5"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Fibre (g)</label>
+          <input type="number" class="field-input" id="nutr-fibre" placeholder="35"/>
+        </div>
+      </div>
+      <button class="btn btn-accent btn-full" onclick="saveNutritionEntry()">Save Nutrition</button>
+    </div>
+
+    <!-- Biometrics -->
+    <div class="entry-section">
+      <h3>📊 Biometrics</h3>
+      <p class="section-sub">Log body metrics & recovery</p>
+      <div class="field-group">
+        <label class="field-label">Date</label>
+        <input type="date" class="field-input" id="bio-date"/>
+      </div>
+      <div class="inline-fields">
+        <div class="field-group">
+          <label class="field-label">Weight (kg)</label>
+          <input type="number" step="0.1" class="field-input" id="bio-weight" placeholder="75.5"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Resting HR (bpm)</label>
+          <input type="number" class="field-input" id="bio-rhr" placeholder="52"/>
+        </div>
+      </div>
+      <div class="inline-fields">
+        <div class="field-group">
+          <label class="field-label">HRV (ms)</label>
+          <input type="number" class="field-input" id="bio-hrv" placeholder="68"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Sleep (hrs)</label>
+          <input type="number" step="0.1" class="field-input" id="bio-sleep" placeholder="7.5"/>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Mood (1-10)</label>
+        <input type="number" class="field-input" id="bio-mood" min="1" max="10" placeholder="7"/>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Stress Level (1-10)</label>
+        <input type="number" class="field-input" id="bio-stress" min="1" max="10" placeholder="3"/>
+      </div>
+      <button class="btn btn-accent btn-full" onclick="saveBioEntry()">Save Biometrics</button>
+    </div>
+  </div>
+
+  <div id="entry-toast" class="alert info" style="display:none;margin-top:16px"></div>
+</div>
+
+<!-- ═══════════════ RAW DATA PAGE ═══════════════ -->
+<div class="page" id="page-data">
+  <div class="dashboard-header">
+    <div class="dashboard-title">
+      <h2>Raw Data</h2>
+      <p>All imported and logged data</p>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline" onclick="exportData()">↓ Export JSON</button>
+      <button class="btn btn-ghost" onclick="clearAllData()">✕ Clear All</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+    <button class="btn btn-outline active" onclick="filterData('all', this)">All</button>
+    <button class="btn btn-ghost" onclick="filterData('workout', this)">Workouts</button>
+    <button class="btn btn-ghost" onclick="filterData('nutrition', this)">Nutrition</button>
+    <button class="btn btn-ghost" onclick="filterData('whoop', this)">WHOOP</button>
+    <button class="btn btn-ghost" onclick="filterData('strava', this)">Strava</button>
+  </div>
+
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Source</th>
+          <th>Type</th>
+          <th>Activity</th>
+          <th>Duration</th>
+          <th>Distance</th>
+          <th>Recovery</th>
+          <th>HRV</th>
+          <th>Sleep</th>
+          <th>Calories</th>
+        </tr>
+      </thead>
+      <tbody id="data-table-body">
+        <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:40px;font-family:var(--font-mono);font-size:13px">No data loaded yet. Connect a data source or log entries manually.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════ SETTINGS PAGE ═══════════════ -->
+<div class="page" id="page-settings">
+  <div class="dashboard-header">
+    <div class="dashboard-title">
+      <h2>Settings</h2>
+      <p>Configure API keys, goals, and preferences</p>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h3>AI Engine</h3>
+    <p class="section-desc">Add your Anthropic API key to enable AI-powered insights and chat. Your key is stored locally in your browser only.</p>
+    <div class="settings-row">
+      <div class="field-group">
+        <label class="field-label">Anthropic API Key</label>
+        <input type="password" class="field-input" id="anthropic-key" placeholder="sk-ant-…"/>
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn btn-accent" onclick="saveApiKey()">Save Key</button>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-top:8px">Get your key at <strong>console.anthropic.com</strong>. Uses claude-sonnet-4-20250514.</p>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="settings-section">
+    <h3>Personal Goals</h3>
+    <p class="section-desc">Set your targets so the AI can give personalised recommendations.</p>
+    <div class="settings-row">
+      <div class="field-group">
+        <label class="field-label">Daily Calorie Target (kcal)</label>
+        <input type="number" class="field-input" id="goal-calories" placeholder="2500"/>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Daily Protein Target (g)</label>
+        <input type="number" class="field-input" id="goal-protein" placeholder="160"/>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="field-group">
+        <label class="field-label">Weekly Training Hours</label>
+        <input type="number" class="field-input" id="goal-hours" placeholder="8"/>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Target Sleep (hrs)</label>
+        <input type="number" step="0.5" class="field-input" id="goal-sleep" placeholder="8"/>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="field-group">
+        <label class="field-label">Weight (kg)</label>
+        <input type="number" step="0.1" class="field-input" id="goal-weight" placeholder="75"/>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Primary Sport / Focus</label>
+        <select class="field-input" id="goal-sport">
+          <option>Running</option>
+          <option>Cycling</option>
+          <option>Triathlon</option>
+          <option>Swimming</option>
+          <option>Strength Training</option>
+          <option>General Fitness</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-accent" onclick="saveGoals()">Save Goals</button>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="settings-section">
+    <h3>☁️ Cloud Sync — Supabase (Optional)</h3>
+    <p class="section-desc">Enable this to sync your data across multiple devices (phone, laptop, etc.). Uses Supabase — free for personal use. Leave blank to keep using local storage only.</p>
+
+    <div class="alert info" style="margin-bottom:16px">
+      <div>
+        <strong>How to set this up (free, ~5 mins):</strong><br>
+        <span style="font-size:11px;line-height:2">
+          1. Go to <strong>supabase.com</strong> and create a free account<br>
+          2. Create a new project (pick any name and region)<br>
+          3. Go to <strong>Project Settings → API</strong><br>
+          4. Copy your <strong>Project URL</strong> and <strong>anon/public key</strong> into the fields below<br>
+          5. Go to <strong>SQL Editor</strong> and run the setup query shown below
+        </span>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="field-group">
+        <label class="field-label">Supabase Project URL</label>
+        <input class="field-input" id="supa-url" placeholder="https://xxxx.supabase.co"/>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Supabase Anon Key</label>
+        <input type="password" class="field-input" id="supa-key" placeholder="eyJhbGciOiJIUzI1NiIs…"/>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label class="field-label" style="margin-bottom:8px;display:block">SQL to run in Supabase SQL Editor (one time only)</label>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;font-family:var(--font-mono);font-size:11px;color:var(--muted);line-height:1.8;white-space:pre-wrap">create table if not exists apex_health_data (
+  id uuid default gen_random_uuid() primary key,
+  user_id text not null,
+  data jsonb not null,
+  updated_at timestamptz default now()
+);
+alter table apex_health_data enable row level security;</div>
+      <button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="copySQL()">Copy SQL</button>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Your User ID (pick any unique name, e.g. your first name)</label>
+      <input class="field-input" id="supa-user-id" placeholder="e.g. james123"/>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+      <button class="btn btn-accent" onclick="saveSupabaseSettings()">Save & Enable Cloud Sync</button>
+      <button class="btn btn-outline" onclick="testSupabaseConnection()" id="supa-test-btn">Test Connection</button>
+      <button class="btn btn-ghost" onclick="syncToSupabase()" id="supa-push-btn" style="display:none">↑ Push Local Data to Cloud</button>
+      <button class="btn btn-ghost" onclick="syncFromSupabase()" id="supa-pull-btn" style="display:none">↓ Pull Cloud Data to This Device</button>
+      <button class="btn btn-danger" onclick="disableSupabase()" id="supa-disable-btn" style="display:none">Disable Cloud Sync</button>
+    </div>
+    <div id="supa-status" style="margin-top:12px"></div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="settings-section">
+    <h3>Data Management</h3>
+    <p class="section-desc" id="data-mgmt-desc">All data is stored locally in your browser's localStorage. Nothing leaves your device unless you explicitly use AI features or enable Cloud Sync above.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="exportData()">↓ Export All Data (JSON)</button>
+      <button class="btn btn-ghost" onclick="importData()">↑ Import Data (JSON)</button>
+      <button class="btn btn-danger" onclick="clearAllData()">✕ Wipe All Data</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+const STATE = {
+  whoop: { connected: false, data: [] },
+  strava: { connected: false, data: [] },
+  excel: { loaded: false, data: [] },
+  manual: { workouts: [], nutrition: [], biometrics: [] },
+  settings: { apiKey: '', goals: {} },
+  charts: {},
+  currentRange: 7
+};
+
+// Load from localStorage on start
+function loadState() {
+  try {
+    const saved = localStorage.getItem('apex_health_state');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      Object.assign(STATE.whoop, parsed.whoop || {});
+      Object.assign(STATE.strava, parsed.strava || {});
+      Object.assign(STATE.excel, parsed.excel || {});
+      Object.assign(STATE.manual, parsed.manual || {});
+      Object.assign(STATE.settings, parsed.settings || {});
+    }
+  } catch(e) { console.warn('State load error', e); }
+  updateConnectionStatus();
+  if (STATE.settings.apiKey) document.getElementById('anthropic-key').value = '•'.repeat(20);
+  updateSupaButtons();
+  if (STATE.settings.goals.calories) {
+    document.getElementById('goal-calories').value = STATE.settings.goals.calories || '';
+    document.getElementById('goal-protein').value = STATE.settings.goals.protein || '';
+    document.getElementById('goal-hours').value = STATE.settings.goals.hours || '';
+    document.getElementById('goal-sleep').value = STATE.settings.goals.sleep || '';
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('apex_health_state', JSON.stringify({
+      whoop: STATE.whoop,
+      strava: STATE.strava,
+      excel: STATE.excel,
+      manual: STATE.manual,
+      settings: STATE.settings
+    }));
+  } catch(e) { console.warn('State save error', e); }
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+const PAGE_TITLES = {
+  setup: 'Setup', dashboard: 'Dashboard', recommendations: 'AI Insights',
+  entry: 'Log Data', data: 'Raw Data', settings: 'Settings'
+};
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+
+  // Update sidebar active state
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.page === name);
+  });
+
+  // Update topbar title
+  const titleEl = document.getElementById('topbar-title');
+  if (titleEl) titleEl.textContent = PAGE_TITLES[name] || name;
+
+  // Show "Dashboard" CTA in topbar when on setup
+  const cta = document.getElementById('topbar-cta');
+  if (cta) cta.style.display = name === 'setup' && hasAnyData() ? 'inline-flex' : 'none';
+
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'recommendations') checkInsights();
+  if (name === 'data') renderDataTable('all');
+  closeSidebar();
+  window.scrollTo(0,0);
+}
+
+function goToDashboard() {
+  showPage('dashboard');
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isOpen = sidebar.classList.contains('open');
+  if (isOpen) {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('visible');
+  } else {
+    sidebar.classList.add('open');
+    overlay.classList.add('visible');
+  }
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('sidebar-overlay')?.classList.remove('visible');
+}
+
+// ══════════════════════════════════════════
+//  REDIRECT URIS
+// ══════════════════════════════════════════
+window.addEventListener('load', () => {
+  const base = window.location.origin;
+  document.getElementById('whoop-redirect').value = base;
+  document.getElementById('strava-redirect').value = base;
+
+  // Handle OAuth callbacks
+  let searchStr = window.location.search;
+  if (!searchStr && window.location.hash && window.location.hash.includes('code=')) {
+    searchStr = '?' + window.location.hash.replace('#', '');
+  }
+  const params = new URLSearchParams(searchStr);
+  const code = params.get('code');
+  const state = params.get('state');
+
+  sessionStorage.setItem('last_url', window.location.href);
+
+  if (code) {
+    loadState();
+    setTodayDates();
+    showOAuthLoading(state);
+    const provider = localStorage.getItem('oauth_provider');
+    if ((state && state.startsWith('whoop')) || provider === 'whoop') {
+      handleWhoopCallback(code);
+    } else if ((state && state.startsWith('strava')) || provider === 'strava') {
+      handleStravaCallback(code);
+    } else if (localStorage.getItem('whoop_client_id')) {
+      handleWhoopCallback(code);
+    }
+  } else {
+    loadState();
+    setTodayDates();
+    if (window.location.search && !code) {
+      const allParams = Object.fromEntries(params.entries());
+      if (allParams.error) {
+        setTimeout(() => {
+          showWhoopError('WHOOP returned an error: ' + (allParams.error_description || allParams.error));
+        }, 500);
+      }
+    }
+  }
+});
+
+function showOAuthLoading(service) {
+  showPage('setup');
+  const banner = document.createElement('div');
+  banner.id = 'oauth-loading-banner';
+  banner.className = 'alert info';
+  banner.style.cssText = 'position:fixed;top:68px;left:50%;transform:translateX(-50%);z-index:999;min-width:320px;justify-content:center;flex-direction:column;gap:8px;';
+  banner.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Connecting ${service === 'strava' ? 'Strava' : 'WHOOP'}...</div><div style="font-size:10px;opacity:0.7">URL: ${window.location.href.substring(0,80)}</div>`;
+  document.body.appendChild(banner);
+  setTimeout(() => { const b = document.getElementById('oauth-loading-banner'); if(b) b.remove(); }, 15000);
+}
+
+function setTodayDates() {
+  const today = new Date().toISOString().split('T')[0];
+  ['entry-date','nutr-date','bio-date'].forEach(id => {
+    document.getElementById(id).value = today;
+  });
+}
+
+// ══════════════════════════════════════════
+//  CONNECTION STATUS
+// ══════════════════════════════════════════
+function updateConnectionStatus() {
+  const dotW = document.getElementById('dot-whoop');
+  const dotS = document.getElementById('dot-strava');
+  if (STATE.whoop.connected) { dotW.classList.add('connected'); showWhoopConnected(); }
+  if (STATE.strava.connected) { dotS.classList.add('connected'); showStravaConnected(); }
+}
+
+function showWhoopConnected() {
+  document.getElementById('whoop-form').style.display = 'none';
+  document.getElementById('whoop-connected').style.display = 'block';
+  document.getElementById('whoop-data-count').textContent = STATE.whoop.data.length;
+  document.getElementById('card-whoop').classList.add('connected');
+  document.getElementById('badge-whoop').textContent = 'Connected';
+  document.getElementById('badge-whoop').className = 'badge connected';
+  document.getElementById('dot-whoop').classList.add('connected');
+}
+
+function showStravaConnected() {
+  document.getElementById('strava-form').style.display = 'none';
+  document.getElementById('strava-connected').style.display = 'block';
+  document.getElementById('strava-data-count').textContent = STATE.strava.data.length;
+  document.getElementById('card-strava').classList.add('connected');
+  document.getElementById('badge-strava').textContent = 'Connected';
+  document.getElementById('badge-strava').className = 'badge connected';
+  document.getElementById('dot-strava').classList.add('connected');
+}
+
+// ══════════════════════════════════════════
+//  WHOOP CONNECTION
+// ══════════════════════════════════════════
+function connectWhoop() {
+  const clientId = document.getElementById('whoop-client-id').value.trim();
+  if (!clientId) { alert('Please enter your WHOOP Client ID'); return; }
+  localStorage.setItem('whoop_client_id', clientId);
+  localStorage.setItem('whoop_client_secret', document.getElementById('whoop-client-secret').value.trim());
+  const redirectUri = encodeURIComponent(window.location.origin);
+  const scope = 'read:recovery read:sleep read:workout read:cycles read:body_measurement';
+  const whoopState = 'whoop_' + Math.random().toString(36).substring(2, 12);
+  localStorage.setItem('oauth_state', whoopState);
+  localStorage.setItem('oauth_provider', 'whoop');
+  const url = `https://api.prod.whoop.com/oauth/oauth2/auth?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${encodeURIComponent(scope)}&state=${whoopState}`;
+  window.location.href = url;
+}
+
+async function handleWhoopCallback(code) {
+  const clientId = localStorage.getItem('whoop_client_id');
+  const clientSecret = localStorage.getItem('whoop_client_secret');
+  const redirectUri = window.location.origin;
+
+  // Remove the loading banner
+  const banner = document.getElementById('oauth-loading-banner');
+  if (banner) banner.remove();
+
+  if (!clientId || !clientSecret) {
+    showWhoopError('Could not find your WHOOP credentials. Please enter your Client ID and Secret again and try connecting.');
+    window.history.replaceState({}, '', window.location.pathname);
+    return;
+  }
+
+  try {
+    const res = await fetch('/.netlify/functions/whoop-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri
+      })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok || result.error) {
+      showWhoopError('Connection failed: ' + (result.error || 'Unknown error') + '. Please check your Client ID and Secret and try again.');
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    const data = mergeWhoopData(result.recovery || [], result.sleep || [], result.cycles || []);
+    STATE.whoop.connected = true;
+    STATE.whoop.data = data;
+    if (result.access_token) localStorage.setItem('whoop_access_token', result.access_token);
+    saveState();
+    showWhoopConnected();
+
+  } catch(e) {
+    showWhoopError('Could not reach the auth service. Make sure your folder structure includes the netlify/functions/whoop-auth.js file and redeploy.');
+  }
+
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
+async function fetchWhoopData(token) {
+  try {
+    const [recovery, sleep, cycles] = await Promise.all([
+      fetch('https://api.prod.whoop.com/developer/v1/recovery', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch('https://api.prod.whoop.com/developer/v1/sleep', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch('https://api.prod.whoop.com/developer/v1/cycle', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
+    ]);
+    const data = mergeWhoopData(recovery.records || [], sleep.records || [], cycles.records || []);
+    STATE.whoop.connected = true;
+    STATE.whoop.data = data;
+    saveState();
+    showWhoopConnected();
+  } catch(e) {
+    console.error('Fetch WHOOP data error', e);
+    loadSampleWhoop();
+  }
+}
+
+function mergeWhoopData(recovery, sleep, cycles) {
+  const map = {};
+  recovery.forEach(r => {
+    const d = r.updated_at?.substring(0,10) || r.created_at?.substring(0,10);
+    if (!map[d]) map[d] = { date: d, source: 'whoop' };
+    map[d].recovery = r.score?.recovery_score;
+    map[d].hrv = r.score?.hrv_rmssd_milli;
+    map[d].rhr = r.score?.resting_heart_rate;
+  });
+  sleep.forEach(s => {
+    const d = s.end?.substring(0,10);
+    if (d) {
+      if (!map[d]) map[d] = { date: d, source: 'whoop' };
+      map[d].sleepHours = (s.score?.stage_summary?.total_in_bed_time_milli || 0) / 3600000;
+      map[d].sleepScore = s.score?.sleep_performance_percentage;
+      map[d].deepSleep = (s.score?.stage_summary?.total_slow_wave_sleep_time_milli || 0) / 3600000;
+      map[d].remSleep = (s.score?.stage_summary?.total_rem_sleep_time_milli || 0) / 3600000;
+    }
+  });
+  cycles.forEach(c => {
+    const d = c.start?.substring(0,10);
+    if (d) {
+      if (!map[d]) map[d] = { date: d, source: 'whoop' };
+      map[d].strain = c.score?.strain;
+    }
+  });
+  return Object.values(map).sort((a,b) => a.date.localeCompare(b.date));
+}
+
+function showWhoopError(msg) {
+  document.getElementById('whoop-form').style.display = 'block';
+  const existing = document.getElementById('whoop-error');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'whoop-error';
+  el.className = 'alert error';
+  el.style.marginTop = '12px';
+  el.textContent = '✕ ' + msg;
+  document.getElementById('whoop-form').appendChild(el);
+}
+
+function disconnectWhoop() {
+  STATE.whoop = { connected: false, data: [] };
+  localStorage.removeItem('whoop_access_token');
+  document.getElementById('dot-whoop').classList.remove('connected');
+  document.getElementById('whoop-form').style.display = 'block';
+  document.getElementById('whoop-connected').style.display = 'none';
+  document.getElementById('card-whoop').classList.remove('connected');
+  document.getElementById('badge-whoop').textContent = 'OAuth2';
+  document.getElementById('badge-whoop').className = 'badge oauth';
+  saveState();
+}
+
+function loadSampleWhoop() {
+  STATE.whoop.connected = true;
+  STATE.whoop.data = generateSampleWhoopData(30);
+  saveState();
+  showWhoopConnected();
+}
+
+function generateSampleWhoopData(days) {
+  const data = [];
+  let hrv = 65;
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    hrv += (Math.random() - 0.5) * 8;
+    hrv = Math.max(40, Math.min(100, hrv));
+    const recovery = Math.round(Math.random() * 50 + 40 + (hrv - 65) * 0.5);
+    data.push({
+      date: d.toISOString().substring(0,10),
+      source: 'whoop',
+      recovery: Math.min(99, Math.max(1, recovery)),
+      hrv: Math.round(hrv),
+      rhr: Math.round(50 + Math.random() * 10),
+      strain: parseFloat((Math.random() * 12 + 4).toFixed(1)),
+      sleepHours: parseFloat((7 + Math.random() * 2 - 1).toFixed(1)),
+      sleepScore: Math.round(70 + Math.random() * 25),
+      deepSleep: parseFloat((1 + Math.random()).toFixed(1)),
+      remSleep: parseFloat((1.5 + Math.random()).toFixed(1))
+    });
+  }
+  return data;
+}
+
+// ══════════════════════════════════════════
+//  STRAVA CONNECTION
+// ══════════════════════════════════════════
+function connectStrava() {
+  const clientId = document.getElementById('strava-client-id').value.trim();
+  if (!clientId) { alert('Please enter your Strava Client ID'); return; }
+  localStorage.setItem('strava_client_id', clientId);
+  localStorage.setItem('strava_client_secret', document.getElementById('strava-client-secret').value.trim());
+  const redirectUri = encodeURIComponent(document.getElementById('strava-redirect').value);
+  const stravaState = 'strava_' + Math.random().toString(36).substring(2, 12);
+  localStorage.setItem('oauth_state', stravaState);
+  localStorage.setItem('oauth_provider', 'strava');
+  const url = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=activity:read_all&state=${stravaState}`;
+  window.location.href = url;
+}
+
+async function handleStravaCallback(code) {
+  const clientId = localStorage.getItem('strava_client_id');
+  const clientSecret = localStorage.getItem('strava_client_secret');
+  const redirectUri = document.getElementById('strava-redirect')?.value || window.location.origin;
+  try {
+    const res = await fetch('/.netlify/functions/strava-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code, redirect_uri: redirectUri })
+    });
+    const result = await res.json();
+    if (!res.ok || result.error) {
+      console.error('Strava auth error', result.error);
+      loadSampleStrava();
+    } else if (result.access_token) {
+      localStorage.setItem('strava_access_token', result.access_token);
+      STATE.strava.connected = true;
+      STATE.strava.data = (result.activities || []).map(a => ({
+        date: a.start_date_local?.substring(0,10),
+        source: 'strava',
+        activity: a.type,
+        name: a.name,
+        duration: Math.round(a.moving_time / 60),
+        distance: parseFloat((a.distance / 1000).toFixed(2)),
+        avgHR: a.average_heartrate,
+        maxHR: a.max_heartrate,
+        elevGain: a.total_elevation_gain,
+        calories: a.calories,
+        avgPace: a.average_speed
+      }));
+      saveState();
+      showStravaConnected();
+    }
+  } catch(e) {
+    console.error('Strava auth error', e);
+    loadSampleStrava();
+  }
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
+async function fetchStravaActivities(token) {
+  try {
+    const after = Math.floor(Date.now() / 1000) - (90 * 86400);
+    const res = await fetch(`https://www.strava.com/api/v3/athlete/activities?per_page=100&after=${after}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const activities = await res.json();
+    STATE.strava.connected = true;
+    STATE.strava.data = activities.map(a => ({
+      date: a.start_date_local?.substring(0,10),
+      source: 'strava',
+      activity: a.type,
+      name: a.name,
+      duration: Math.round(a.moving_time / 60),
+      distance: parseFloat((a.distance / 1000).toFixed(2)),
+      avgHR: a.average_heartrate,
+      maxHR: a.max_heartrate,
+      elevGain: a.total_elevation_gain,
+      calories: a.calories,
+      avgPace: a.average_speed
+    }));
+    saveState();
+    showStravaConnected();
+  } catch(e) {
+    console.error('Strava fetch error', e);
+    loadSampleStrava();
+  }
+}
+
+function disconnectStrava() {
+  STATE.strava = { connected: false, data: [] };
+  localStorage.removeItem('strava_access_token');
+  document.getElementById('dot-strava').classList.remove('connected');
+  document.getElementById('strava-form').style.display = 'block';
+  document.getElementById('strava-connected').style.display = 'none';
+  document.getElementById('card-strava').classList.remove('connected');
+  document.getElementById('badge-strava').textContent = 'OAuth2';
+  document.getElementById('badge-strava').style.cssText = 'background:rgba(252,76,2,0.1);color:var(--strava)';
+  saveState();
+}
+
+function loadSampleStrava() {
+  STATE.strava.connected = true;
+  STATE.strava.data = generateSampleStravaData(30);
+  saveState();
+  showStravaConnected();
+}
+
+function generateSampleStravaData(days) {
+  const types = ['Run', 'Run', 'Ride', 'Run', 'Strength', 'Walk', 'Ride'];
+  const data = [];
+  for (let i = days - 1; i >= 0; i--) {
+    if (Math.random() > 0.4) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const type = types[Math.floor(Math.random() * types.length)];
+      data.push({
+        date: d.toISOString().substring(0,10),
+        source: 'strava',
+        activity: type,
+        name: `${type} — ${d.toDateString()}`,
+        duration: Math.round(20 + Math.random() * 80),
+        distance: type === 'Ride' ? parseFloat((20 + Math.random() * 60).toFixed(1)) : parseFloat((3 + Math.random() * 15).toFixed(1)),
+        avgHR: Math.round(130 + Math.random() * 40),
+        calories: Math.round(200 + Math.random() * 600),
+        elevGain: Math.round(Math.random() * 400)
+      });
+    }
+  }
+  return data;
+}
+
+// ══════════════════════════════════════════
+//  EXCEL UPLOAD
+// ══════════════════════════════════════════
+async function handleExcelUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('excel-status');
+  statusEl.innerHTML = '<div class="alert info"><div class="spinner" style="width:14px;height:14px;border-width:2px"></div> Reading file…</div>';
+
+  try {
+    const data = await readExcelFile(file);
+    const parsed = parseExcelData(data);
+    STATE.excel.loaded = true;
+    STATE.excel.data = parsed;
+    STATE.excel.fileName = file.name;
+    saveState();
+    statusEl.innerHTML = `<div class="alert info">✓ Loaded ${parsed.length} rows from <strong>${file.name}</strong></div>`;
+    document.getElementById('card-excel').classList.add('connected');
+  } catch(e) {
+    statusEl.innerHTML = `<div class="alert error">✕ Error reading file: ${e.message}</div>`;
+  }
+}
+
+function readExcelFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        resolve(XLSX.utils.sheet_to_json(ws));
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsBinaryString(file);
+  });
+}
+
+function parseExcelData(rows) {
+  return rows.map(row => {
+    const normalise = key => key.toLowerCase().replace(/[^a-z0-9]/g,'');
+    const get = (...keys) => {
+      for (const k of keys) {
+        const found = Object.keys(row).find(rk => normalise(rk) === normalise(k));
+        if (found !== undefined && row[found] !== undefined && row[found] !== '') return row[found];
+      }
+      return null;
+    };
+    return {
+      date: get('date', 'day', 'Date'),
+      source: 'excel',
+      activity: get('activity', 'type', 'sport', 'Sport'),
+      duration: get('duration', 'time', 'minutes', 'Duration'),
+      distance: get('distance', 'km', 'miles', 'Distance'),
+      calories: get('calories', 'kcal', 'energy', 'Calories'),
+      protein: get('protein', 'proteing', 'Protein (g)'),
+      carbs: get('carbs', 'carbsg', 'Carbs (g)', 'carbohydrates'),
+      fat: get('fat', 'fatg', 'Fat (g)'),
+      water: get('water', 'hydration', 'Water (L)'),
+      weight: get('weight', 'bodyweight', 'kg'),
+      hrv: get('hrv', 'heartratevariability'),
+      notes: get('notes', 'comment', 'description')
+    };
+  }).filter(r => r.date);
+}
+
+// Drag/drop
+const dropZone = document.getElementById('excel-drop-zone');
+if (dropZone) {
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) { document.getElementById('excel-file').files = e.dataTransfer.files; handleExcelUpload({ target: { files: [file] } }); }
+  });
+}
+
+// ══════════════════════════════════════════
+//  MANUAL ENTRIES
+// ══════════════════════════════════════════
+function saveWorkoutEntry() {
+  const entry = {
+    date: document.getElementById('entry-date').value,
+    source: 'manual', activity: document.getElementById('entry-type').value,
+    duration: +document.getElementById('entry-duration').value || null,
+    distance: +document.getElementById('entry-distance').value || null,
+    avgHR: +document.getElementById('entry-hr').value || null,
+    rpe: +document.getElementById('entry-rpe').value || null,
+    notes: document.getElementById('entry-notes').value
+  };
+  if (!entry.date) { showToast('Please enter a date', 'warning'); return; }
+  STATE.manual.workouts.push(entry);
+  saveState();
+  showToast(`✓ Workout saved for ${entry.date}`);
+  document.getElementById('manual-status').innerHTML = `<div style="font-size:12px;color:var(--muted);font-family:var(--font-mono)">${STATE.manual.workouts.length} manual workout${STATE.manual.workouts.length !== 1 ? 's' : ''}</div>`;
+}
+
+function saveNutritionEntry() {
+  const entry = {
+    date: document.getElementById('nutr-date').value,
+    source: 'manual', type: 'nutrition',
+    calories: +document.getElementById('nutr-calories').value || null,
+    protein: +document.getElementById('nutr-protein').value || null,
+    carbs: +document.getElementById('nutr-carbs').value || null,
+    fat: +document.getElementById('nutr-fat').value || null,
+    water: +document.getElementById('nutr-water').value || null,
+    fibre: +document.getElementById('nutr-fibre').value || null
+  };
+  if (!entry.date) { showToast('Please enter a date', 'warning'); return; }
+  STATE.manual.nutrition.push(entry);
+  saveState();
+  showToast(`✓ Nutrition saved for ${entry.date}`);
+}
+
+function saveBioEntry() {
+  const entry = {
+    date: document.getElementById('bio-date').value,
+    source: 'manual', type: 'biometric',
+    weight: +document.getElementById('bio-weight').value || null,
+    rhr: +document.getElementById('bio-rhr').value || null,
+    hrv: +document.getElementById('bio-hrv').value || null,
+    sleepHours: +document.getElementById('bio-sleep').value || null,
+    mood: +document.getElementById('bio-mood').value || null,
+    stress: +document.getElementById('bio-stress').value || null
+  };
+  if (!entry.date) { showToast('Please enter a date', 'warning'); return; }
+  STATE.manual.biometrics.push(entry);
+  saveState();
+  showToast(`✓ Biometrics saved for ${entry.date}`);
+}
+
+function showToast(msg, type='info') {
+  const el = document.getElementById('entry-toast');
+  el.className = `alert ${type}`;
+  el.textContent = msg;
+  el.style.display = 'flex';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+// ══════════════════════════════════════════
+//  DATA AGGREGATION
+// ══════════════════════════════════════════
+function getAllData() {
+  const all = [];
+  STATE.whoop.data.forEach(d => all.push({...d}));
+  STATE.strava.data.forEach(d => all.push({...d}));
+  STATE.excel.data.forEach(d => all.push({...d}));
+  STATE.manual.workouts.forEach(d => all.push({...d}));
+  STATE.manual.nutrition.forEach(d => all.push({...d}));
+  STATE.manual.biometrics.forEach(d => all.push({...d}));
+  return all.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+}
+
+function getDateRange(days) {
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = cutoff.toISOString().substring(0,10);
+  return getAllData().filter(d => d.date >= cutoffStr);
+}
+
+function hasAnyData() {
+  return STATE.whoop.connected || STATE.strava.connected ||
+    STATE.excel.loaded || STATE.manual.workouts.length > 0;
+}
+
+// ══════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════
+function setRange(days, btn) {
+  STATE.currentRange = days;
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDashboard();
+}
+
+function renderDashboard() {
+  if (!hasAnyData()) {
+    document.getElementById('dash-empty').style.display = 'block';
+    document.getElementById('dash-content').style.display = 'none';
+    return;
+  }
+  document.getElementById('dash-empty').style.display = 'none';
+  document.getElementById('dash-content').style.display = 'block';
+
+  const data = getDateRange(STATE.currentRange);
+  const whoopData = data.filter(d => d.source === 'whoop');
+  const stravaData = data.filter(d => d.source === 'strava' || (d.source === 'manual' && d.activity));
+  const nutrData = [...data.filter(d => d.calories), ...STATE.manual.nutrition];
+
+  const endDate = new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+  const startDate = new Date(Date.now() - STATE.currentRange * 86400000).toLocaleDateString('en-GB', {day:'numeric',month:'short'});
+  document.getElementById('dash-subtitle').textContent = `${startDate} → ${endDate}`;
+
+  renderTodayHero(whoopData, stravaData, nutrData);
+  renderKPIs(whoopData, stravaData, nutrData);
+  renderRecoveryChart(whoopData);
+  renderSleepChart(whoopData);
+  renderVolumeChart(stravaData);
+  renderHRVChart(whoopData);
+  renderMacros(nutrData);
+  renderCorrelationMatrix(whoopData, stravaData, nutrData);
+  renderActivityChart(stravaData);
+  renderRecoveryDistChart(whoopData);
+}
+
+function avg(arr, key) {
+  const vals = arr.map(d => d[key]).filter(v => v != null && !isNaN(v));
+  return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
+}
+
+function renderTodayHero(whoopData, stravaData, nutrData) {
+  const el = document.getElementById('today-hero');
+  if (!el) return;
+
+  const today = new Date().toISOString().substring(0, 10);
+  const todayWhoop = whoopData.filter(d => d.date === today);
+  const prev7Whoop = whoopData.filter(d => d.date < today);
+
+  function trendClass(val, prev, higherBetter = true) {
+    if (val == null || prev == null) return 'neutral';
+    return (higherBetter ? val > prev : val < prev) ? 'up' : 'down';
+  }
+
+  function trendLabel(val, prev, higherBetter = true) {
+    if (val == null || prev == null) return '—';
+    const diff = val - prev;
+    const sign = diff > 0 ? '+' : '';
+    if (higherBetter) return diff > 0 ? `▲ ${sign}${Math.round(diff)}` : `▼ ${Math.round(diff)}`;
+    return diff < 0 ? `▲ ${Math.abs(Math.round(diff))} better` : `▼ +${Math.round(diff)}`;
+  }
+
+  const metrics = [
+    {
+      label: 'Recovery',
+      value: todayWhoop[0]?.recovery != null ? Math.round(todayWhoop[0].recovery) : (whoopData.slice(-1)[0]?.recovery != null ? Math.round(whoopData.slice(-1)[0].recovery) : null),
+      prev: avg(prev7Whoop, 'recovery'),
+      unit: '/ 100',
+      color: (() => { const v = todayWhoop[0]?.recovery || whoopData.slice(-1)[0]?.recovery; return v > 67 ? 'var(--accent)' : v > 33 ? 'var(--warning)' : 'var(--danger)'; })(),
+      higherBetter: true
+    },
+    {
+      label: 'HRV',
+      value: todayWhoop[0]?.hrv != null ? Math.round(todayWhoop[0].hrv) : (whoopData.slice(-1)[0]?.hrv != null ? Math.round(whoopData.slice(-1)[0].hrv) : null),
+      prev: avg(prev7Whoop, 'hrv'),
+      unit: 'ms',
+      color: 'var(--accent)',
+      higherBetter: true
+    },
+    {
+      label: 'Sleep',
+      value: todayWhoop[0]?.sleepHours != null ? todayWhoop[0].sleepHours?.toFixed(1) : (whoopData.slice(-1)[0]?.sleepHours != null ? whoopData.slice(-1)[0].sleepHours?.toFixed(1) : null),
+      prev: avg(prev7Whoop, 'sleepHours'),
+      unit: 'hours',
+      color: (() => { const v = parseFloat(todayWhoop[0]?.sleepHours || whoopData.slice(-1)[0]?.sleepHours); return v > 7 ? 'var(--accent)' : v > 6 ? 'var(--warning)' : 'var(--danger)'; })(),
+      higherBetter: true
+    },
+    {
+      label: 'Strain',
+      value: todayWhoop[0]?.strain != null ? todayWhoop[0].strain?.toFixed(1) : (whoopData.slice(-1)[0]?.strain != null ? whoopData.slice(-1)[0].strain?.toFixed(1) : null),
+      prev: avg(prev7Whoop, 'strain'),
+      unit: '/ 21',
+      color: 'var(--accent2)',
+      higherBetter: false
+    },
+    {
+      label: 'Resting HR',
+      value: todayWhoop[0]?.rhr != null ? Math.round(todayWhoop[0].rhr) : (whoopData.slice(-1)[0]?.rhr != null ? Math.round(whoopData.slice(-1)[0].rhr) : null),
+      prev: avg(prev7Whoop, 'rhr'),
+      unit: 'bpm',
+      color: 'var(--accent)',
+      higherBetter: false
+    }
+  ];
+
+  const hasHero = metrics.some(m => m.value != null);
+  el.style.display = hasHero ? 'grid' : 'none';
+  if (!hasHero) return;
+
+  el.innerHTML = metrics.map(m => {
+    const val = m.value ?? '—';
+    const tc = trendClass(parseFloat(m.value), m.prev, m.higherBetter);
+    const tl = trendLabel(parseFloat(m.value), m.prev, m.higherBetter);
+    return `
+      <div class="hero-metric">
+        <div class="hero-label">${m.label}</div>
+        <div class="hero-value" style="color:${m.color}">${val}</div>
+        <div class="hero-unit">${m.unit}</div>
+        <div class="hero-trend ${tc}">${tl}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderKPIs(whoop, strava, nutr) {
+  const avgRecovery = avg(whoop, 'recovery');
+  const avgHRV = avg(whoop, 'hrv');
+  const avgSleep = avg(whoop, 'sleepHours');
+  const avgStrain = avg(whoop, 'strain');
+  const totalActivities = strava.length;
+  const totalDistance = strava.reduce((s,d) => s + (d.distance||0), 0);
+  const avgCalories = avg(nutr, 'calories');
+  const avgRHR = avg(whoop, 'rhr');
+
+  const kpis = [
+    { label: 'Avg Recovery', value: avgRecovery ? Math.round(avgRecovery) : '—', unit: '/ 100', color: avgRecovery > 67 ? 'var(--accent)' : avgRecovery > 33 ? 'var(--warning)' : 'var(--danger)', delta: avgRecovery ? (avgRecovery > 67 ? '▲ Good' : avgRecovery > 33 ? '● Moderate' : '▼ Low') : '', deltaClass: avgRecovery > 67 ? 'up' : avgRecovery > 33 ? 'neutral' : 'down' },
+    { label: 'Avg HRV', value: avgHRV ? Math.round(avgHRV) : '—', unit: 'ms', color: 'var(--accent)', delta: '', deltaClass: 'neutral' },
+    { label: 'Avg Sleep', value: avgSleep ? avgSleep.toFixed(1) : '—', unit: 'hours', color: avgSleep > 7 ? 'var(--accent)' : avgSleep > 6 ? 'var(--warning)' : 'var(--danger)', delta: '', deltaClass: 'neutral' },
+    { label: 'Avg Strain', value: avgStrain ? avgStrain.toFixed(1) : '—', unit: '/ 21', color: 'var(--accent2)', delta: '', deltaClass: 'neutral' },
+    { label: 'Activities', value: totalActivities, unit: `last ${STATE.currentRange}d`, color: 'var(--accent3)', delta: '', deltaClass: 'neutral' },
+    { label: 'Total Distance', value: totalDistance.toFixed(0), unit: 'km', color: '#4499ff', delta: '', deltaClass: 'neutral' },
+    { label: 'Avg Calories', value: avgCalories ? Math.round(avgCalories) : '—', unit: 'kcal/day', color: 'var(--warning)', delta: '', deltaClass: 'neutral' },
+    { label: 'Resting HR', value: avgRHR ? Math.round(avgRHR) : '—', unit: 'bpm', color: 'var(--accent)', delta: '', deltaClass: 'neutral' }
+  ];
+
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k => `
+    <div class="kpi-card" style="--kpi-color:${k.color}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-unit">${k.unit}</div>
+      ${k.delta ? `<div class="kpi-delta ${k.deltaClass}">${k.delta}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+const CHART_DEFAULTS = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false }, tooltip: {
+    backgroundColor: 'rgba(14,14,20,0.97)',
+    borderColor: 'rgba(42,42,58,0.8)', borderWidth: 1,
+    titleColor: '#e8e8f0', bodyColor: '#9999bb',
+    padding: 12, cornerRadius: 8,
+    titleFont: { family: 'Syne', weight: '700', size: 13 },
+    bodyFont: { family: 'Space Mono', size: 11 }
+  }},
+  scales: {
+    x: { grid: { color: 'rgba(42,42,58,0.3)' }, border: { color: 'rgba(42,42,58,0.5)' }, ticks: { color: '#6b6b85', font: { family: 'Space Mono', size: 10 }, maxRotation: 0 } },
+    y: { grid: { color: 'rgba(42,42,58,0.3)' }, border: { color: 'rgba(42,42,58,0.5)' }, ticks: { color: '#6b6b85', font: { family: 'Space Mono', size: 10 } } }
+  }
+};
+
+function destroyChart(id) {
+  if (STATE.charts[id]) { STATE.charts[id].destroy(); delete STATE.charts[id]; }
+}
+
+function makeGradient(ctx, color, alpha1 = 0.35, alpha2 = 0) {
+  const h = ctx.canvas.offsetHeight || 260;
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, color.replace(')', `, ${alpha1})`).replace('rgb', 'rgba'));
+  g.addColorStop(1, color.replace(')', `, ${alpha2})`).replace('rgb', 'rgba'));
+  return g;
+}
+
+function renderRecoveryChart(data) {
+  destroyChart('recovery');
+  if (!data.length) return;
+  const labels = data.map(d => d.date?.substring(5));
+  const ctx = document.getElementById('chart-recovery').getContext('2d');
+  const gradG = ctx.createLinearGradient(0, 0, 0, 280);
+  gradG.addColorStop(0, 'rgba(0,255,136,0.3)'); gradG.addColorStop(1, 'rgba(0,255,136,0)');
+  STATE.charts['recovery'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Recovery %', data: data.map(d => d.recovery), borderColor: '#00ff88', borderWidth: 2, backgroundColor: gradG, tension: 0.4, fill: true, pointRadius: 3, pointBackgroundColor: '#00ff88', pointBorderColor: 'transparent', pointHoverRadius: 5 },
+        { label: 'Strain (scaled)', data: data.map(d => d.strain ? d.strain * 4.76 : null), borderColor: '#ff6b35', borderWidth: 1.5, backgroundColor: 'transparent', tension: 0.4, borderDash: [4,3], pointRadius: 2, pointBackgroundColor: '#ff6b35', yAxisID: 'y' }
+      ]
+    },
+    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: true, labels: { color: '#6b6b85', font: { family: 'Space Mono', size: 10 }, boxWidth: 10, padding: 16 } } } }
+  });
+}
+
+function renderSleepChart(data) {
+  destroyChart('sleep');
+  if (!data.length) return;
+  const labels = data.map(d => d.date?.substring(5));
+  const ctx = document.getElementById('chart-sleep').getContext('2d');
+  STATE.charts['sleep'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Sleep (hrs)', data: data.map(d => d.sleepHours), backgroundColor: data.map(d => d.sleepHours > 7 ? 'rgba(0,255,136,0.65)' : d.sleepHours > 6 ? 'rgba(255,170,0,0.65)' : 'rgba(255,68,68,0.65)'), borderRadius: 5, borderSkipped: false }
+      ]
+    },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+
+function renderVolumeChart(data) {
+  destroyChart('volume');
+  if (!data.length) return;
+  const weeks = {};
+  data.forEach(d => {
+    const date = new Date(d.date);
+    const weekStart = new Date(date); weekStart.setDate(date.getDate() - date.getDay());
+    const wk = weekStart.toISOString().substring(5,10);
+    if (!weeks[wk]) weeks[wk] = 0;
+    weeks[wk] += (d.duration || 0) / 60;
+  });
+  const labels = Object.keys(weeks).sort();
+  const ctx = document.getElementById('chart-volume').getContext('2d');
+  STATE.charts['volume'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Hours', data: labels.map(k => +weeks[k].toFixed(1)), backgroundColor: 'rgba(124,58,237,0.7)', borderRadius: 6, borderSkipped: false, hoverBackgroundColor: 'rgba(124,58,237,0.9)' }]
+    },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+
+function renderHRVChart(data) {
+  destroyChart('hrv');
+  if (!data.length) return;
+  const ctx = document.getElementById('chart-hrv').getContext('2d');
+  const gradP = ctx.createLinearGradient(0, 0, 0, 220);
+  gradP.addColorStop(0, 'rgba(124,58,237,0.35)'); gradP.addColorStop(1, 'rgba(124,58,237,0)');
+  STATE.charts['hrv'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map(d => d.date?.substring(5)),
+      datasets: [{ label: 'HRV (ms)', data: data.map(d => d.hrv), borderColor: '#7c3aed', borderWidth: 2, backgroundColor: gradP, tension: 0.4, fill: true, pointRadius: 2, pointBackgroundColor: '#7c3aed', pointHoverRadius: 5 }]
+    },
+    options: { ...CHART_DEFAULTS }
+  });
+}
+
+function renderMacros(nutrData) {
+  const el = document.getElementById('macro-display');
+  if (!nutrData.length) return;
+  const protein = avg(nutrData, 'protein');
+  const carbs = avg(nutrData, 'carbs');
+  const fat = avg(nutrData, 'fat');
+  const calories = avg(nutrData, 'calories');
+  if (!calories) return;
+  const goals = STATE.settings.goals;
+  el.innerHTML = `
+    <div style="padding:0 4px">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:28px;font-weight:800;color:var(--warning)">${Math.round(calories)}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono)">avg kcal/day</div>
+      </div>
+      ${macroBar('Protein', protein, goals.protein || 160, '#00ff88')}
+      ${macroBar('Carbs', carbs, (calories * 0.45 / 4), '#4499ff')}
+      ${macroBar('Fat', fat, (calories * 0.3 / 9), '#ff6b35')}
+    </div>
+  `;
+}
+
+function macroBar(label, val, target, color) {
+  if (!val) return '';
+  const pct = Math.min(100, Math.round((val / target) * 100));
+  return `
+    <div class="macro-bar-wrap">
+      <div class="macro-label-row">
+        <span>${label}</span>
+        <span style="color:${color}">${Math.round(val)}g <span style="color:var(--muted)">(${pct}%)</span></span>
+      </div>
+      <div class="macro-bar">
+        <div class="macro-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderActivityChart(data) {
+  destroyChart('activities');
+  if (!data.length) return;
+  const counts = {};
+  data.forEach(d => { const t = d.activity || 'Other'; counts[t] = (counts[t]||0)+1; });
+  const ctx = document.getElementById('chart-activities').getContext('2d');
+  const colors = ['rgba(0,255,136,0.7)','rgba(252,76,2,0.7)','rgba(124,58,237,0.7)','rgba(68,153,255,0.7)','rgba(255,170,0,0.7)','rgba(0,200,200,0.7)'];
+  STATE.charts['activities'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: colors, borderWidth: 0 }] },
+    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: true, position: 'bottom', labels: { color: '#6b6b85', font: { family: 'Space Mono', size: 10 }, boxWidth: 10, padding: 12 } } } }
+  });
+}
+
+function renderRecoveryDistChart(data) {
+  destroyChart('recovery-dist');
+  if (!data.length) return;
+  const green = data.filter(d => d.recovery >= 67).length;
+  const yellow = data.filter(d => d.recovery >= 34 && d.recovery < 67).length;
+  const red = data.filter(d => d.recovery && d.recovery < 34).length;
+  const ctx = document.getElementById('chart-recovery-dist').getContext('2d');
+  STATE.charts['recovery-dist'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Green (67+)', 'Yellow (34-66)', 'Red (<34)'],
+      datasets: [{ data: [green, yellow, red], backgroundColor: ['rgba(0,255,136,0.7)','rgba(255,170,0,0.7)','rgba(255,68,68,0.7)'], borderWidth: 0 }]
+    },
+    options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, legend: { display: true, position: 'bottom', labels: { color: '#6b6b85', font: { family: 'Space Mono', size: 10 }, boxWidth: 10, padding: 12 } } } }
+  });
+}
+
+function pearsonCorrelation(x, y) {
+  const n = Math.min(x.length, y.length);
+  if (n < 3) return null;
+  const mx = x.slice(0,n).reduce((a,b)=>a+b,0)/n;
+  const my = y.slice(0,n).reduce((a,b)=>a+b,0)/n;
+  let num = 0, dx2 = 0, dy2 = 0;
+  for (let i = 0; i < n; i++) {
+    const dxi = x[i]-mx, dyi = y[i]-my;
+    num += dxi*dyi; dx2 += dxi*dxi; dy2 += dyi*dyi;
+  }
+  const denom = Math.sqrt(dx2*dy2);
+  return denom === 0 ? null : +(num/denom).toFixed(2);
+}
+
+function renderCorrelationMatrix(whoop, strava, nutr) {
+  const el = document.getElementById('corr-matrix');
+  const metrics = ['Recovery', 'HRV', 'Sleep', 'Strain', 'Calories'];
+  const getData = name => {
+    if (name === 'Recovery') return whoop.map(d=>d.recovery).filter(Boolean);
+    if (name === 'HRV') return whoop.map(d=>d.hrv).filter(Boolean);
+    if (name === 'Sleep') return whoop.map(d=>d.sleepHours).filter(Boolean);
+    if (name === 'Strain') return whoop.map(d=>d.strain).filter(Boolean);
+    if (name === 'Calories') return nutr.map(d=>d.calories).filter(Boolean);
+    return [];
+  };
+
+  const corrColor = v => {
+    if (v === null) return '#2a2a3a';
+    const abs = Math.abs(v);
+    if (v > 0) return `rgba(0,255,136,${0.15 + abs*0.6})`;
+    return `rgba(255,68,68,${0.15 + abs*0.6})`;
+  };
+
+  let html = '<div class="corr-grid">';
+  html += '<div class="corr-cell header"></div>';
+  metrics.forEach(m => html += `<div class="corr-cell header">${m.substring(0,3)}</div>`);
+  metrics.forEach(a => {
+    html += `<div class="corr-cell label">${a.substring(0,3)}</div>`;
+    metrics.forEach(b => {
+      if (a === b) { html += `<div class="corr-cell" style="background:rgba(255,255,255,0.05);color:var(--muted)">1.00</div>`; return; }
+      const da = getData(a), db = getData(b);
+      const corr = pearsonCorrelation(da, db);
+      const display = corr !== null ? corr.toFixed(2) : '—';
+      html += `<div class="corr-cell" style="background:${corrColor(corr)};color:${corr !== null ? '#e8e8f0' : 'var(--muted)'}">${display}</div>`;
+    });
+  });
+  html += '</div>';
+  html += '<p style="font-size:11px;color:var(--muted);font-family:var(--font-mono);margin-top:12px">Green = positive correlation · Red = negative correlation · More data improves accuracy</p>';
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+//  AI INSIGHTS
+// ══════════════════════════════════════════
+function checkInsights() {
+  if (!hasAnyData()) {
+    document.getElementById('insights-empty').style.display = 'block';
+    document.getElementById('rec-cards').style.display = 'none';
+    document.getElementById('api-key-alert').style.display = 'none';
+    return;
+  }
+  document.getElementById('insights-empty').style.display = 'none';
+  document.getElementById('rec-cards').style.display = 'grid';
+  if (!STATE.settings.apiKey) {
+    document.getElementById('api-key-alert').style.display = 'flex';
+    renderStaticInsights();
+  } else {
+    document.getElementById('api-key-alert').style.display = 'none';
+    generateInsights();
+  }
+}
+
+function buildDataSummary() {
+  const data = getDateRange(30);
+  const whoopData = data.filter(d => d.source === 'whoop');
+  const stravaData = data.filter(d => d.activity);
+  const nutrData = data.filter(d => d.calories);
+  return {
+    days: 30,
+    avgRecovery: avg(whoopData, 'recovery'),
+    avgHRV: avg(whoopData, 'hrv'),
+    avgSleep: avg(whoopData, 'sleepHours'),
+    avgStrain: avg(whoopData, 'strain'),
+    avgRHR: avg(whoopData, 'rhr'),
+    totalActivities: stravaData.length,
+    activityTypes: [...new Set(stravaData.map(d => d.activity))],
+    totalDistance: stravaData.reduce((s,d) => s+(d.distance||0), 0),
+    avgCalories: avg(nutrData, 'calories'),
+    avgProtein: avg(nutrData, 'protein'),
+    avgCarbs: avg(nutrData, 'carbs'),
+    avgFat: avg(nutrData, 'fat'),
+    goals: STATE.settings.goals
+  };
+}
+
+async function generateInsights() {
+  if (!STATE.settings.apiKey) { renderStaticInsights(); return; }
+  document.getElementById('insights-loading').style.display = 'flex';
+  document.getElementById('rec-cards').innerHTML = '';
+
+  const summary = buildDataSummary();
+  const prompt = `You are a performance coach analysing health data. Based on the following 30-day data summary, generate exactly 6 actionable recommendations as a JSON array. Each object should have: title (string), body (string, 2-3 sentences), type (one of: "Training", "Recovery", "Nutrition", "Sleep", "Performance"), priority (one of: "high", "medium", "low"). Be specific and data-driven.
+
+Data: ${JSON.stringify(summary, null, 2)}
+
+Return ONLY a valid JSON array, no markdown.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.settings.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const d = await res.json();
+    const text = d.content?.[0]?.text || '[]';
+    const recs = JSON.parse(text.replace(/```json|```/g, '').trim());
+    renderRecCards(recs);
+  } catch(e) {
+    console.error('AI insights error', e);
+    renderStaticInsights();
+  }
+  document.getElementById('insights-loading').style.display = 'none';
+}
+
+function renderStaticInsights() {
+  const summary = buildDataSummary();
+  const recs = [];
+
+  if (summary.avgRecovery !== null) {
+    if (summary.avgRecovery < 50) {
+      recs.push({ type:'Recovery', title:'Recovery score is below optimal', body:`Your average recovery is ${Math.round(summary.avgRecovery)}%. This suggests accumulated fatigue. Consider adding a rest day this week and prioritising 8+ hours of sleep to bring HRV back up.`, priority:'high' });
+    } else {
+      recs.push({ type:'Recovery', title:'Recovery is solid — push harder', body:`With a ${Math.round(summary.avgRecovery)}% average recovery score, your body is adapting well. This is a good window to increase training intensity or volume.`, priority:'low' });
+    }
+  }
+
+  if (summary.avgHRV !== null) {
+    recs.push({ type:'Performance', title:'HRV baseline established', body:`Your 30-day average HRV is ${Math.round(summary.avgHRV)}ms. Track deviations of >10% below your baseline as a signal to reduce intensity that day.`, priority:'medium' });
+  }
+
+  if (summary.avgSleep !== null && summary.avgSleep < 7.5) {
+    recs.push({ type:'Sleep', title:'Sleep duration below target', body:`Averaging ${summary.avgSleep.toFixed(1)} hours. Research shows performance degrades with less than 7 hours. Aim for a consistent bedtime 30 minutes earlier to incrementally build up to 8 hours.`, priority:'high' });
+  }
+
+  if (summary.avgCalories !== null && summary.goals.calories) {
+    const diff = summary.avgCalories - summary.goals.calories;
+    if (Math.abs(diff) > 200) {
+      recs.push({ type:'Nutrition', title: diff > 0 ? 'Calorie intake above target' : 'Calorie intake below target', body:`You're averaging ${Math.round(Math.abs(diff))} kcal ${diff>0?'above':'below'} your goal of ${summary.goals.calories} kcal. ${diff<0 && summary.totalActivities>5 ? 'Under-fuelling with high training volume can impair recovery.' : ''}`, priority:'medium' });
+    }
+  }
+
+  if (summary.avgProtein !== null && summary.goals.protein && summary.avgProtein < summary.goals.protein * 0.8) {
+    recs.push({ type:'Nutrition', title:'Protein intake insufficient for training load', body:`Averaging ${Math.round(summary.avgProtein)}g protein vs your ${summary.goals.protein}g target. With ${summary.totalActivities} sessions in the last 30 days, aim for 1.6–2.2g/kg body weight to support muscle repair.`, priority:'high' });
+  }
+
+  if (summary.totalActivities > 0) {
+    recs.push({ type:'Training', title:`${summary.totalActivities} sessions completed — analyse the load`, body:`You logged ${summary.totalActivities} sessions across ${summary.activityTypes.join(', ')}. Total distance: ${summary.totalDistance.toFixed(0)}km. Add your Anthropic API key in Settings to get detailed periodisation recommendations.`, priority:'low' });
+  }
+
+  if (recs.length === 0) {
+    recs.push({ type:'Setup', title:'Connect more data sources', body:'Link WHOOP and Strava, or log manual entries, to unlock data-driven recommendations across recovery, training load, sleep, and nutrition.', priority:'medium' });
+  }
+
+  renderRecCards(recs);
+}
+
+const typeColors = {
+  Training: '#ff6b35', Recovery: '#00ff88', Nutrition: '#ffaa00',
+  Sleep: '#7c3aed', Performance: '#4499ff', Setup: '#6b6b85'
+};
+
+function renderRecCards(recs) {
+  const el = document.getElementById('rec-cards');
+  el.innerHTML = recs.map(r => `
+    <div class="rec-card">
+      <div class="rec-type" style="color:${typeColors[r.type]||'#6b6b85'}">
+        <div class="rec-dot" style="background:${typeColors[r.type]||'#6b6b85'}"></div>
+        ${r.type.toUpperCase()}
+      </div>
+      <div class="rec-title">${r.title}</div>
+      <div class="rec-body">${r.body}</div>
+      <div class="rec-priority ${r.priority}">● ${r.priority.toUpperCase()} PRIORITY</div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  AI CHAT
+// ══════════════════════════════════════════
+async function sendChat() {
+  const input = document.getElementById('ai-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  appendMsg('user', msg);
+  const typing = appendTyping();
+
+  if (!STATE.settings.apiKey) {
+    typing.remove();
+    appendMsg('ai', 'To chat with the AI, please add your Anthropic API key in Settings. In the meantime, I can tell you that your data is loading — try navigating to the Dashboard to see your visualisations.');
+    return;
+  }
+
+  const summary = buildDataSummary();
+  const systemPrompt = `You are a performance coach assistant with access to the user's health data. Be concise, specific, and actionable. Data summary: ${JSON.stringify(summary)}`;
+
+  try {
+    const history = [...chatHistory, { role: 'user', content: msg }];
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.settings.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 600, system: systemPrompt, messages: history })
+    });
+    const d = await res.json();
+    const reply = d.content?.[0]?.text || 'Sorry, I could not generate a response.';
+    chatHistory.push({ role: 'user', content: msg }, { role: 'assistant', content: reply });
+    if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+    typing.remove();
+    appendMsg('ai', reply);
+  } catch(e) {
+    typing.remove();
+    appendMsg('ai', 'Error contacting AI. Please check your API key in Settings.');
+  }
+}
+
+let chatHistory = [];
+
+function appendMsg(role, text) {
+  const el = document.getElementById('ai-messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar ${role === 'ai' ? 'ai' : 'user-av'}">${role === 'ai' ? '◈' : 'U'}</div>
+    <div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div>
+  `;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const el = document.getElementById('ai-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.innerHTML = `<div class="msg-avatar ai">◈</div><div class="typing"><span></span><span></span><span></span></div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+  return div;
+}
+
+// ══════════════════════════════════════════
+//  DATA TABLE
+// ══════════════════════════════════════════
+function renderDataTable(filter) {
+  let data = getAllData();
+  if (filter === 'workout') data = data.filter(d => d.activity);
+  if (filter === 'nutrition') data = data.filter(d => d.calories && d.type === 'nutrition');
+  if (filter === 'whoop') data = data.filter(d => d.source === 'whoop');
+  if (filter === 'strava') data = data.filter(d => d.source === 'strava');
+
+  const typeTag = t => {
+    const map = { Run:'run', Ride:'ride', Strength:'strength', Swim:'swim' };
+    const cls = map[t] || '';
+    return t ? `<span class="tag ${cls}">${t}</span>` : '—';
+  };
+
+  const body = document.getElementById('data-table-body');
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:40px;font-family:var(--font-mono);font-size:13px">No data for this filter.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = data.slice(0, 200).map(d => `
+    <tr>
+      <td>${d.date || '—'}</td>
+      <td><span style="color:var(--muted)">${d.source}</span></td>
+      <td>${typeTag(d.activity)}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${d.name || (d.type === 'nutrition' ? 'Nutrition' : d.activity || '—')}</td>
+      <td>${d.duration ? d.duration + 'm' : '—'}</td>
+      <td>${d.distance ? d.distance + 'km' : '—'}</td>
+      <td>${d.recovery ? `<span style="color:${d.recovery>67?'var(--accent)':d.recovery>33?'var(--warning)':'var(--danger)'}">${d.recovery}%</span>` : '—'}</td>
+      <td>${d.hrv ? d.hrv + 'ms' : '—'}</td>
+      <td>${d.sleepHours ? d.sleepHours.toFixed(1) + 'h' : '—'}</td>
+      <td>${d.calories ? Math.round(d.calories) + 'kcal' : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function filterData(type, btn) {
+  document.querySelectorAll('#page-data .btn').forEach(b => b.className = 'btn btn-ghost');
+  btn.className = 'btn btn-outline active';
+  renderDataTable(type);
+}
+
+// ══════════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════════
+function saveApiKey() {
+  const key = document.getElementById('anthropic-key').value.trim();
+  if (!key || key.startsWith('•')) return;
+  STATE.settings.apiKey = key;
+  saveState();
+  document.getElementById('anthropic-key').value = '•'.repeat(20);
+  document.getElementById('api-key-alert').style.display = 'none';
+  alert('API key saved locally. ✓');
+}
+
+function saveGoals() {
+  STATE.settings.goals = {
+    calories: +document.getElementById('goal-calories').value || null,
+    protein: +document.getElementById('goal-protein').value || null,
+    hours: +document.getElementById('goal-hours').value || null,
+    sleep: +document.getElementById('goal-sleep').value || null,
+    weight: +document.getElementById('goal-weight').value || null,
+    sport: document.getElementById('goal-sport').value
+  };
+  saveState();
+  alert('Goals saved. ✓');
+}
+
+// ══════════════════════════════════════════
+//  SUPABASE CLOUD SYNC
+// ══════════════════════════════════════════
+function saveSupabaseSettings() {
+  const url = document.getElementById('supa-url').value.trim();
+  const key = document.getElementById('supa-key').value.trim();
+  const userId = document.getElementById('supa-user-id').value.trim();
+  if (!url || !key || !userId) {
+    showSupaStatus('Please fill in all three fields.', 'error'); return;
+  }
+  STATE.settings.supabase = { url, key, userId, enabled: true };
+  saveState();
+  showSupaStatus('✓ Cloud sync enabled. Use the buttons below to push or pull data.', 'info');
+  updateSupaButtons();
+}
+
+function updateSupaButtons() {
+  const enabled = STATE.settings.supabase?.enabled;
+  document.getElementById('supa-push-btn').style.display = enabled ? 'inline-flex' : 'none';
+  document.getElementById('supa-pull-btn').style.display = enabled ? 'inline-flex' : 'none';
+  document.getElementById('supa-disable-btn').style.display = enabled ? 'inline-flex' : 'none';
+  if (enabled) {
+    document.getElementById('supa-url').value = STATE.settings.supabase.url;
+    document.getElementById('supa-user-id').value = STATE.settings.supabase.userId;
+    document.getElementById('supa-key').value = '•'.repeat(20);
+    document.getElementById('data-mgmt-desc').textContent = 'Cloud sync is enabled. Your data is synced to Supabase and accessible on any device.';
+  }
+}
+
+async function testSupabaseConnection() {
+  const cfg = STATE.settings.supabase;
+  if (!cfg?.url) { showSupaStatus('Save your settings first.', 'error'); return; }
+  const btn = document.getElementById('supa-test-btn');
+  btn.textContent = 'Testing…'; btn.disabled = true;
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/apex_health_data?limit=1`, {
+      headers: { 'apikey': cfg.key, 'Authorization': `Bearer ${cfg.key}` }
+    });
+    if (res.ok || res.status === 406) {
+      showSupaStatus('✓ Connection successful! Supabase is reachable.', 'info');
+    } else if (res.status === 404) {
+      showSupaStatus('⚠ Connected but table not found. Make sure you ran the SQL setup query.', 'warning');
+    } else {
+      showSupaStatus(`✕ Connection failed (${res.status}). Check your URL and key.`, 'error');
+    }
+  } catch(e) {
+    showSupaStatus('✕ Could not reach Supabase. Check your Project URL.', 'error');
+  }
+  btn.textContent = 'Test Connection'; btn.disabled = false;
+}
+
+async function syncToSupabase() {
+  const cfg = STATE.settings.supabase;
+  if (!cfg?.enabled) { showSupaStatus('Cloud sync not configured.', 'error'); return; }
+  const btn = document.getElementById('supa-push-btn');
+  btn.textContent = 'Pushing…'; btn.disabled = true;
+  const payload = {
+    whoop: STATE.whoop,
+    strava: STATE.strava,
+    excel: STATE.excel,
+    manual: STATE.manual,
+    settings: { goals: STATE.settings.goals }
+  };
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/apex_health_data`, {
+      method: 'POST',
+      headers: {
+        'apikey': cfg.key,
+        'Authorization': `Bearer ${cfg.key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ user_id: cfg.userId, data: payload, updated_at: new Date().toISOString() })
+    });
+    if (res.ok || res.status === 201) {
+      showSupaStatus(`✓ Data pushed to cloud successfully at ${new Date().toLocaleTimeString()}.`, 'info');
+    } else {
+      const err = await res.text();
+      showSupaStatus(`✕ Push failed: ${err}`, 'error');
+    }
+  } catch(e) {
+    showSupaStatus('✕ Push failed. Check your connection.', 'error');
+  }
+  btn.textContent = '↑ Push Local Data to Cloud'; btn.disabled = false;
+}
+
+async function syncFromSupabase() {
+  const cfg = STATE.settings.supabase;
+  if (!cfg?.enabled) { showSupaStatus('Cloud sync not configured.', 'error'); return; }
+  const btn = document.getElementById('supa-pull-btn');
+  btn.textContent = 'Pulling…'; btn.disabled = true;
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/apex_health_data?user_id=eq.${cfg.userId}&order=updated_at.desc&limit=1`, {
+      headers: { 'apikey': cfg.key, 'Authorization': `Bearer ${cfg.key}` }
+    });
+    const rows = await res.json();
+    if (!rows.length) {
+      showSupaStatus('No cloud data found for this user ID. Push from another device first.', 'warning');
+      btn.textContent = '↓ Pull Cloud Data to This Device'; btn.disabled = false;
+      return;
+    }
+    const saved = rows[0].data;
+    if (saved.whoop) Object.assign(STATE.whoop, saved.whoop);
+    if (saved.strava) Object.assign(STATE.strava, saved.strava);
+    if (saved.excel) Object.assign(STATE.excel, saved.excel);
+    if (saved.manual) Object.assign(STATE.manual, saved.manual);
+    if (saved.settings?.goals) STATE.settings.goals = saved.settings.goals;
+    saveState();
+    updateConnectionStatus();
+    showSupaStatus(`✓ Data pulled from cloud. Last updated: ${new Date(rows[0].updated_at).toLocaleString()}.`, 'info');
+  } catch(e) {
+    showSupaStatus('✕ Pull failed. Check your connection and settings.', 'error');
+  }
+  btn.textContent = '↓ Pull Cloud Data to This Device'; btn.disabled = false;
+}
+
+function disableSupabase() {
+  if (!confirm('Disable cloud sync? Your local data will remain. You can re-enable anytime.')) return;
+  delete STATE.settings.supabase;
+  saveState();
+  document.getElementById('supa-url').value = '';
+  document.getElementById('supa-key').value = '';
+  document.getElementById('supa-user-id').value = '';
+  updateSupaButtons();
+  showSupaStatus('Cloud sync disabled. Back to local storage only.', 'warning');
+}
+
+function showSupaStatus(msg, type) {
+  const el = document.getElementById('supa-status');
+  el.innerHTML = `<div class="alert ${type}">${msg}</div>`;
+  setTimeout(() => el.innerHTML = '', 6000);
+}
+
+function copySQL() {
+  const sql = `create table if not exists apex_health_data (
+  id uuid default gen_random_uuid() primary key,
+  user_id text not null,
+  data jsonb not null,
+  updated_at timestamptz default now()
+);
+alter table apex_health_data enable row level security;`;
+  navigator.clipboard.writeText(sql).then(() => alert('SQL copied to clipboard!')).catch(() => alert('Copy failed — please copy the SQL manually.'));
+}
+
+// ══════════════════════════════════════════
+//  IMPORT / EXPORT / CLEAR
+// ══════════════════════════════════════════
+function exportData() {
+  const blob = new Blob([JSON.stringify(getAllData(), null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `apex_health_export_${new Date().toISOString().substring(0,10)}.json`;
+  a.click();
+}
+
+function importData() {
+  const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+  input.onchange = async e => {
+    const text = await e.target.files[0].text();
+    try {
+      const data = JSON.parse(text);
+      if (confirm(`Import ${data.length} records? This will not replace existing data.`)) {
+        data.forEach(d => { if (d.source === 'manual' && d.activity) STATE.manual.workouts.push(d); });
+        saveState();
+        alert('Imported successfully.');
+      }
+    } catch { alert('Invalid JSON file.'); }
+  };
+  input.click();
+}
+
+function clearAllData() {
+  if (!confirm('This will delete ALL loaded data, connections, and entries. Are you sure?')) return;
+  STATE.whoop = { connected: false, data: [] };
+  STATE.strava = { connected: false, data: [] };
+  STATE.excel = { loaded: false, data: [] };
+  STATE.manual = { workouts: [], nutrition: [], biometrics: [] };
+  saveState();
+  location.reload();
+}
+
+</script>
+</div><!-- end main-content -->
+</div><!-- end app-layout -->
+</body>
+</html>
