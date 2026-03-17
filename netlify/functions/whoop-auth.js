@@ -53,15 +53,15 @@ exports.handler = async function(event) {
       };
     }
 
-    // Fetch WHOOP data using the access token
+    // Fetch WHOOP data using the access token (max limit is 25 per page)
     const [recoveryRes, sleepRes, cycleRes] = await Promise.all([
-      fetch('https://api.prod.whoop.com/developer/v1/recovery?limit=90', {
+      fetch('https://api.prod.whoop.com/developer/v1/recovery?limit=25', {
         headers: { Authorization: `Bearer ${tokens.access_token}` }
       }),
-      fetch('https://api.prod.whoop.com/developer/v1/sleep?limit=90', {
+      fetch('https://api.prod.whoop.com/developer/v1/activity/sleep?limit=25', {
         headers: { Authorization: `Bearer ${tokens.access_token}` }
       }),
-      fetch('https://api.prod.whoop.com/developer/v1/cycle?limit=90', {
+      fetch('https://api.prod.whoop.com/developer/v1/cycle?limit=25', {
         headers: { Authorization: `Bearer ${tokens.access_token}` }
       })
     ]);
