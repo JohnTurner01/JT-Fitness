@@ -1343,7 +1343,10 @@ main {
       </div>
       <div id="whoop-connected" style="display:none">
         <div class="alert info">✓ WHOOP connected · <span id="whoop-data-count">0</span> days of data loaded</div>
-        <button class="btn btn-danger btn-full" onclick="disconnectWhoop()">Disconnect</button>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-outline btn-full" onclick="refreshWhoopData(this)">↻ Refresh Data</button>
+          <button class="btn btn-danger btn-full" onclick="disconnectWhoop()">Disconnect</button>
+        </div>
       </div>
     </div>
 
@@ -1381,7 +1384,10 @@ main {
       </div>
       <div id="strava-connected" style="display:none">
         <div class="alert info" style="background:rgba(252,76,2,0.08);border-color:rgba(252,76,2,0.2);color:var(--strava)">✓ Strava connected · <span id="strava-data-count">0</span> activities loaded</div>
-        <button class="btn btn-danger btn-full" onclick="disconnectStrava()">Disconnect</button>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-outline btn-full" onclick="refreshStravaData(this)">↻ Refresh Data</button>
+          <button class="btn btn-danger btn-full" onclick="disconnectStrava()">Disconnect</button>
+        </div>
       </div>
     </div>
 
@@ -2285,6 +2291,28 @@ function showWhoopError(msg) {
   el.style.marginTop = '12px';
   el.textContent = '✕ ' + msg;
   document.getElementById('whoop-form').appendChild(el);
+}
+
+async function refreshWhoopData(btn) {
+  const token = localStorage.getItem('whoop_access_token');
+  if (!token) { alert('No stored token — please reconnect WHOOP.'); return; }
+  const orig = btn.textContent;
+  btn.textContent = '↻ Refreshing…';
+  btn.disabled = true;
+  await fetchWhoopData(token);
+  btn.textContent = orig;
+  btn.disabled = false;
+}
+
+async function refreshStravaData(btn) {
+  const token = localStorage.getItem('strava_access_token');
+  if (!token) { alert('No stored token — please reconnect Strava.'); return; }
+  const orig = btn.textContent;
+  btn.textContent = '↻ Refreshing…';
+  btn.disabled = true;
+  await fetchStravaActivities(token);
+  btn.textContent = orig;
+  btn.disabled = false;
 }
 
 function disconnectWhoop() {
