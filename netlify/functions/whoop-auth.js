@@ -66,10 +66,16 @@ exports.handler = async function(event) {
       })
     ]);
 
+    const safeJson = async (res) => {
+      const text = await res.text();
+      console.log('WHOOP data response', res.url, res.status, text.substring(0, 100));
+      try { return JSON.parse(text); } catch(e) { return {}; }
+    };
+
     const [recovery, sleep, cycles] = await Promise.all([
-      recoveryRes.json(),
-      sleepRes.json(),
-      cycleRes.json()
+      safeJson(recoveryRes),
+      safeJson(sleepRes),
+      safeJson(cycleRes)
     ]);
 
     return {
