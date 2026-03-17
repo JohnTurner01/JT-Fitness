@@ -2213,6 +2213,7 @@ async function handleWhoopCallback(code) {
       return;
     }
 
+    if (result._debug) console.log('WHOOP debug:', JSON.stringify(result._debug));
     const data = mergeWhoopData(result.recovery || [], result.sleep || [], result.cycles || []);
     STATE.whoop.connected = true;
     STATE.whoop.data = data;

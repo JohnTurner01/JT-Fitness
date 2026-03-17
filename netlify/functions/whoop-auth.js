@@ -78,6 +78,8 @@ exports.handler = async function(event) {
       safeJson(cycleRes)
     ]);
 
+    console.log('WHOOP data counts — recovery:', (recovery.records||[]).length, 'sleep:', (sleep.records||[]).length, 'cycles:', (cycles.records||[]).length);
+
     return {
       statusCode: 200,
       headers,
@@ -85,7 +87,8 @@ exports.handler = async function(event) {
         access_token: tokens.access_token,
         recovery: recovery.records || [],
         sleep: sleep.records || [],
-        cycles: cycles.records || []
+        cycles: cycles.records || [],
+        _debug: { recoveryCount: (recovery.records||[]).length, sleepCount: (sleep.records||[]).length, cyclesCount: (cycles.records||[]).length, recoveryKeys: Object.keys(recovery), sleepKeys: Object.keys(sleep) }
       })
     };
 
